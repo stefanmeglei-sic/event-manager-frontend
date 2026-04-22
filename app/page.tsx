@@ -1,3 +1,5 @@
+import { headers } from "next/headers";
+
 type OpenApiOperation = {
   summary?: string;
   description?: string;
@@ -31,8 +33,34 @@ const METHOD_COLORS: Record<string, string> = {
 
 function getBackendBaseUrl(): string {
   const configured =
-    process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000/api/v1";
+    process.env.BACKEND_INTERNAL_API_URL ||
+    process.env.NEXT_PUBLIC_API_URL ||
+    process.env.NEXT_PUBLIC_API_BASE_URL ||
+    "http://localhost:8000/api/v1";
   return configured.replace(/\/api\/v1\/?$/, "");
+}
+
+async function getBackendPublicBaseUrl(): Promise<string> {
+  const configured =
+    process.env.NEXT_PUBLIC_BROWSER_API_URL ||
+    process.env.NEXT_PUBLIC_API_BROWSER_BASE_URL ||
+    process.env.NEXT_PUBLIC_API_BASE_URL;
+
+  if (configured) {
+    return configured.replace(/\/api\/v1\/?$/, "");
+  }
+
+  const requestHeaders = await headers();
+  const host = requestHeaders.get("x-forwarded-host") || requestHeaders.get("host") || "localhost:3000";
+  const protocol = requestHeaders.get("x-forwarded-proto") || "http";
+
+  try {
+    const url = new URL(`${protocol}://${host}`);
+    url.port = "8000";
+    return url.origin;
+  } catch {
+    return "http://localhost:8000";
+  }
 }
 
 async function getOpenApiSpec(): Promise<OpenApiSpec | null> {
@@ -80,6 +108,7 @@ export default async function Home() {
   const spec = await getOpenApiSpec();
   const endpoints = buildEndpoints(spec);
   const backendBaseUrl = getBackendBaseUrl();
+  const backendPublicBaseUrl = await getBackendPublicBaseUrl();
 
   return (
     <main className="min-h-screen bg-[radial-gradient(circle_at_20%_0%,#e0f2fe_0%,#fff7ed_35%,#f8fafc_75%)] px-6 py-10 text-slate-900 md:px-10">
@@ -95,7 +124,7 @@ export default async function Home() {
             </div>
             <div className="flex flex-col items-start gap-2 text-sm">
               <a
-                href={`${backendBaseUrl}/docs`}
+                href={`${backendPublicBaseUrl}/docs`}
                 target="_blank"
                 rel="noreferrer"
                 className="rounded-full bg-slate-900 px-4 py-2 font-medium text-white transition hover:bg-slate-700"
@@ -103,7 +132,7 @@ export default async function Home() {
                 Open FastAPI Swagger
               </a>
               <a
-                href={`${backendBaseUrl}/openapi.json`}
+                href={`${backendPublicBaseUrl}/openapi.json`}
                 target="_blank"
                 rel="noreferrer"
                 className="font-medium text-sky-700 underline decoration-sky-300 underline-offset-2"
@@ -142,7 +171,7 @@ export default async function Home() {
           </div>
           <div className="rounded-2xl border border-slate-200 bg-white/90 p-4">
             <p className="text-xs uppercase tracking-wide text-slate-500">Base URL</p>
-            <p className="mt-1 break-all text-sm font-semibold text-slate-700">{backendBaseUrl}</p>
+            <p className="mt-1 break-all text-sm font-semibold text-slate-700">{backendPublicBaseUrl}</p>
           </div>
         </section>
 
