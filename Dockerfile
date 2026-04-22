@@ -19,6 +19,8 @@ COPY . .
 # Build-time env: point to backend via internal docker network
 ARG NEXT_PUBLIC_API_URL=http://backend:8000/api/v1
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+ARG NEXT_PUBLIC_BROWSER_API_URL=http://localhost:8000/api/v1
+ENV NEXT_PUBLIC_BROWSER_API_URL=$NEXT_PUBLIC_BROWSER_API_URL
 
 RUN npm run build
 
