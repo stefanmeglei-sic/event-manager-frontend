@@ -8,13 +8,18 @@ import {
   useState,
 } from "react";
 
-import { loginWithGoogleToken, type AuthUser } from "../lib/auth";
+import {
+  loginWithGoogleToken,
+  loginWithEmailPassword,
+  type AuthUser,
+} from "../lib/auth";
 
 interface AuthContextType {
   user: AuthUser | null;
   isLoading: boolean;
   error: string | null;
   login: (idToken: string) => Promise<void>;
+  loginEmail: (email: string, password: string) => Promise<void>;
   logout: () => void;
 }
 
@@ -22,7 +27,7 @@ const AuthContext = createContext<AuthContextType | null>(null);
 
 const STORAGE_KEY = "event_manager_auth";
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
+export function AuthProvider({ children }: { children: React.ReactNode }): React.JSX.Element {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -39,13 +44,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  function persistUser(authUser: AuthUser): void {
+    setUser(authUser);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(authUser));
+    localStorage.setItem("token", authUser.token);
+    // Set cookie for middleware
+    document.cookie = `token=${authUser.token}; path=/; SameSite=Lax`;
+  }
+
   const login = useCallback(async (idToken: string) => {
     setIsLoading(true);
     setError(null);
     try {
       const authUser = await loginWithGoogleToken(idToken);
-      setUser(authUser);
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(authUser));
+      persistUser(authUser);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Sign-in failed";
+      setError(message);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  const loginEmail = useCallback(async (email: string, password: string) => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const authUser = await loginWithEmailPassword(email, password);
+      persistUser(authUser);
     } catch (err) {
       const message = err instanceof Error ? err.message : "Sign-in failed";
       setError(message);
@@ -58,10 +84,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(null);
     setError(null);
     localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem("token");
+    // Clear cookie
+    document.cookie = "token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, error, login, logout }}>
+    <AuthContext.Provider value={{ user, isLoading, error, login, loginEmail, logout }}>
       {children}
     </AuthContext.Provider>
   );

@@ -1,26 +1,91 @@
 @import "tailwindcss";
 
+/* ─── Design tokens ─────────────────────────────────────────────────────────
+   All colours, radii and shadows live here.
+   Components use semantic Tailwind utilities like `bg-surface`, `text-text`,
+   `border-border`, `text-primary`, etc. — never raw palette values.
+   ────────────────────────────────────────────────────────────────────────── */
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Page background */
+  --bg:            #0f1117;
+  /* Card / panel surface */
+  --surface:       #1a1d27;
+  /* Elevated surface (dropdowns, modals) */
+  --surface-raised: #21253a;
+  /* Subtle background used for inactive chips / tags */
+  --surface-muted: #252a3a;
+
+  /* Borders */
+  --border:        #2e3347;
+  --border-focus:  #6366f1;
+
+  /* Typography */
+  --text:          #e2e8f0;
+  --text-muted:    #8892a4;
+  --text-subtle:   #525d72;
+
+  /* Primary accent — indigo */
+  --primary:       #6366f1;
+  --primary-hover: #4f46e5;
+  --on-primary:    #ffffff;
+
+  /* Semantic status colours */
+  --success:       #10b981;
+  --success-bg:    #064e3b;
+  --warning:       #f59e0b;
+  --warning-bg:    #451a03;
+  --danger:        #ef4444;
+  --danger-bg:     #450a0a;
+  --info:          #38bdf8;
+  --info-bg:       #0c4a6e;
+
+  /* Misc */
+  --radius:        0.75rem;
+  --radius-full:   9999px;
 }
 
+/* Register every token as a Tailwind utility.
+   e.g.  bg-bg  |  bg-surface  |  text-text  |  text-muted  |  border-border
+         bg-primary  |  text-primary  |  text-on-primary
+         bg-success-bg  |  text-success  … */
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+
+  --color-bg:            var(--bg);
+  --color-surface:       var(--surface);
+  --color-surface-raised: var(--surface-raised);
+  --color-surface-muted: var(--surface-muted);
+
+  --color-border:        var(--border);
+  --color-border-focus:  var(--border-focus);
+
+  --color-text:          var(--text);
+  --color-muted:         var(--text-muted);
+  --color-subtle:        var(--text-subtle);
+
+  --color-primary:       var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-on-primary:    var(--on-primary);
+
+  --color-success:       var(--success);
+  --color-success-bg:    var(--success-bg);
+  --color-warning:       var(--warning);
+  --color-warning-bg:    var(--warning-bg);
+  --color-danger:        var(--danger);
+  --color-danger-bg:     var(--danger-bg);
+  --color-info:          var(--info);
+  --color-info-bg:       var(--info-bg);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* ─── Base styles ───────────────────────────────────────────────────────── */
+html {
+  color-scheme: dark;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: var(--bg);
+  color: var(--text);
+  font-family: var(--font-geist-sans, Arial, sans-serif);
 }

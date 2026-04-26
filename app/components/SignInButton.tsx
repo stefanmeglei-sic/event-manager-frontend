@@ -1,6 +1,7 @@
 "use client";
 
 import { GoogleLogin } from "@react-oauth/google";
+import Link from "next/link";
 import { useAuth } from "./AuthProvider";
 
 const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ?? "";
@@ -11,12 +12,28 @@ export function SignInButton() {
   if (user) {
     return (
       <div className="flex items-center gap-3">
-        <span className="max-w-[200px] truncate text-sm text-slate-600" title={user.email}>
-          {user.email}
+        {(user.role === "admin" || user.role === "organizer") && (
+          <Link
+            href="/events/new"
+            className="rounded-full border border-border px-3 py-1.5 text-xs font-medium text-text transition hover:bg-surface-muted"
+          >
+            New event
+          </Link>
+        )}
+        {user.role === "admin" && (
+          <Link
+            href="/admin/locations"
+            className="rounded-full border border-border px-3 py-1.5 text-xs font-medium text-text transition hover:bg-surface-muted"
+          >
+            Locations
+          </Link>
+        )}
+        <span className="max-w-[200px] truncate text-sm text-muted" title={user.email}>
+          {user.email} ({user.role})
         </span>
         <button
           onClick={logout}
-          className="rounded-full border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-100"
+          className="rounded-full border border-border px-3 py-1.5 text-xs font-medium text-text transition hover:bg-surface-muted"
         >
           Sign out
         </button>
