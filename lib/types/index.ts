@@ -79,3 +79,16 @@ export type PaginatedEvents = {
 export type ApiError = {
   detail: string;
 };
+
+export type Registration = {
+  id: string;
+  event_id: string;
+  user_id: string;
+  status_id: string;
+  created_at: string;
+};
+
+export type PaginatedUsers = {
+  items: Array<{ id: string; email: string; role_name: string; created_at: string }>;
+  next_cursor: string | null;
+};
