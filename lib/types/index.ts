@@ -92,3 +92,15 @@ export type PaginatedUsers = {
   items: Array<{ id: string; email: string; role_name: string; created_at: string }>;
   next_cursor: string | null;
 };
+
+export type MyRegistration = {
+  id: string;
+  eveniment_id: string;
+  event_title: string;
+  event_start_date: string;
+  tip_participare_id: string | null;
+  status_id: string;
+  check_in_at: string | null;
+  qr_token: string | null;
+  created_at: string;
+};
