@@ -1,21 +1,24 @@
 import Link from "next/link";
 import { apiFetch } from "@/lib/api/client";
-import type { Event, Location, EventCategory } from "@/lib/types";
+import type { Event, Location, EventCategory, EventStatus } from "@/lib/types";
 import EnrollButton from "./EnrollButton";
+import ValidateButtons from "./ValidateButtons";
 
 type Props = { params: Promise<{ id: string }> };
 
 export default async function EventDetailPage({ params }: Props) {
   const { id } = await params;
 
-  const [event, locations, categories] = await Promise.all([
+  const [event, locations, categories, statuses] = await Promise.all([
     apiFetch<Event>(`/events/${id}`),
     apiFetch<Location[]>("/lookups/locations"),
     apiFetch<EventCategory[]>("/lookups/event-categories"),
+    apiFetch<EventStatus[]>("/lookups/event-statuses"),
   ]);
 
   const location = locations.find((l) => l.id === event.locatie_id);
   const category = categories.find((c) => c.id === event.categorie_id);
+  const draftStatus = statuses.find((s) => s.nume === "draft");
 
   return (
     <main className="mx-auto max-w-3xl px-4 py-10">
@@ -105,6 +108,18 @@ export default async function EventDetailPage({ params }: Props) {
           </div>
         )}
 
+        <div>
+          <p className="text-xs text-muted uppercase tracking-wider mb-2">QR Code</p>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={`${process.env.NEXT_PUBLIC_BROWSER_API_URL ?? "http://localhost:8000/api/v1"}/events/${id}/qr`}
+            alt="Event QR Code"
+            width={160}
+            height={160}
+            className="rounded-lg border border-border"
+          />
+        </div>
+
         <div className="border-t border-border pt-4 flex gap-3">
           <EnrollButton eventId={id} />
           <Link
@@ -114,6 +129,10 @@ export default async function EventDetailPage({ params }: Props) {
             Edit event
           </Link>
         </div>
+
+        {draftStatus && event.status_id === draftStatus.id && (
+          <ValidateButtons eventId={id} />
+        )}
       </div>
     </main>
   );

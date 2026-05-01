@@ -36,6 +36,14 @@ export function SignInButton() {
             Users
           </Link>
         )}
+        {user.role === "admin" && (
+          <Link
+            href="/admin/reports"
+            className="rounded-full border border-border px-3 py-1.5 text-xs font-medium text-text transition hover:bg-surface-muted"
+          >
+            Reports
+          </Link>
+        )}
         <Link
           href="/profile"
           className="rounded-full border border-border px-3 py-1.5 text-xs font-medium text-text transition hover:bg-surface-muted"

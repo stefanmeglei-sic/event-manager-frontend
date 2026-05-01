@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import type { Event, PaginatedEvents, EventCategory, EventStatus } from "../../../lib/types";
 import { EventCard } from "../../../components/events/event-card";
+import { CalendarView } from "../../../components/events/CalendarView";
 import { listEvents } from "../../../lib/api/events";
 
 type EventsClientProps = {
@@ -22,6 +23,8 @@ export function EventsClient({
   );
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedStatus, setSelectedStatus] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [view, setView] = useState<"list" | "calendar">("list");
   const [isPending, startTransition] = useTransition();
   const [loadError, setLoadError] = useState<string | null>(null);
 
@@ -33,6 +36,7 @@ export function EventsClient({
   async function applyFilter(
     categoryId: string | null,
     statusId: string | null,
+    search?: string,
   ): Promise<void> {
     setLoadError(null);
     try {
@@ -40,6 +44,7 @@ export function EventsClient({
         limit: 20,
         categorie_id: categoryId ?? undefined,
         status_id: statusId ?? undefined,
+        search: search ?? undefined,
       });
       setEvents(data.items);
       setNextCursor(data.next_cursor);
@@ -81,6 +86,38 @@ export function EventsClient({
 
   return (
     <div className="space-y-6">
+      {/* View toggle */}
+      <div className="flex gap-2">
+        <button
+          onClick={() => setView("list")}
+          className={`rounded-full px-3 py-1.5 text-xs font-medium border transition ${view === "list" ? "bg-primary text-on-primary border-primary" : "border-border text-text hover:bg-surface-muted"}`}
+        >
+          List
+        </button>
+        <button
+          onClick={() => setView("calendar")}
+          className={`rounded-full px-3 py-1.5 text-xs font-medium border transition ${view === "calendar" ? "bg-primary text-on-primary border-primary" : "border-border text-text hover:bg-surface-muted"}`}
+        >
+          Calendar
+        </button>
+      </div>
+
+      {/* Search input */}
+      <input
+        type="text"
+        value={searchQuery}
+        onChange={(e) => setSearchQuery(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") {
+            startTransition(() => {
+              applyFilter(selectedCategory, selectedStatus, e.currentTarget.value).catch(() => undefined);
+            });
+          }
+        }}
+        placeholder="Search events…"
+        className="w-full max-w-sm rounded-full border border-border bg-surface px-4 py-1.5 text-sm text-text placeholder:text-muted focus:outline-none focus:ring-1 focus:ring-border"
+      />
+
       {/* Category filters */}
       {categories.length > 0 && (
         <div className="flex flex-wrap gap-2">
@@ -153,7 +190,9 @@ export function EventsClient({
       )}
 
       {/* Events grid */}
-      {events.length === 0 ? (
+      {view === "calendar" ? (
+        <CalendarView events={events} />
+      ) : events.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-border p-12 text-center">
           <p className="text-muted">No events found.</p>
           {(selectedCategory ?? selectedStatus) && (

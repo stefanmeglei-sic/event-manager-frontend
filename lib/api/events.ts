@@ -6,6 +6,7 @@ export type ListEventsParams = {
   cursor?: string;
   status_id?: string;
   categorie_id?: string;
+  search?: string;
 };
 
 export async function listEvents(
@@ -16,6 +17,7 @@ export async function listEvents(
   if (params?.cursor) search.set('cursor', params.cursor);
   if (params?.status_id) search.set('status_id', params.status_id);
   if (params?.categorie_id) search.set('categorie_id', params.categorie_id);
+  if (params?.search) search.set('search', params.search);
 
   const query = search.toString() ? `?${search.toString()}` : '';
   return apiFetch<PaginatedEvents>(`/events${query}`);

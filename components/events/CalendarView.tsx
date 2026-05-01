@@ -1,0 +1,79 @@
+"use client";
+import Link from "next/link";
+import type { Event } from "@/lib/types";
+
+type Props = { events: Event[] };
+
+export function CalendarView({ events }: Props) {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = now.getMonth(); // 0-indexed
+
+  const firstDay = new Date(year, month, 1).getDay(); // 0=Sun
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+  // Build map: day → events
+  const eventsByDay: Record<number, Event[]> = {};
+  for (const event of events) {
+    const d = new Date(event.start_date);
+    if (d.getFullYear() === year && d.getMonth() === month) {
+      const day = d.getDate();
+      if (!eventsByDay[day]) eventsByDay[day] = [];
+      eventsByDay[day].push(event);
+    }
+  }
+
+  const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  const cells: (number | null)[] = [
+    ...Array(firstDay).fill(null),
+    ...Array.from({ length: daysInMonth }, (_, i) => i + 1),
+  ];
+  // pad to complete last row
+  while (cells.length % 7 !== 0) cells.push(null);
+
+  const monthName = now.toLocaleString("ro-RO", { month: "long", year: "numeric" });
+
+  return (
+    <div className="rounded-xl border border-border bg-surface overflow-hidden">
+      <div className="px-4 py-3 border-b border-border">
+        <p className="text-sm font-semibold text-text capitalize">{monthName}</p>
+      </div>
+      <div className="grid grid-cols-7 border-b border-border">
+        {dayNames.map((d) => (
+          <div key={d} className="px-2 py-2 text-center text-xs text-muted font-medium">{d}</div>
+        ))}
+      </div>
+      <div className="grid grid-cols-7">
+        {cells.map((day, i) => (
+          <div
+            key={i}
+            className={`min-h-[80px] border-b border-r border-border/50 p-1 ${day ? "" : "bg-surface-muted/30"}`}
+          >
+            {day && (
+              <>
+                <p className={`text-xs font-medium mb-1 ${day === now.getDate() ? "text-primary" : "text-muted"}`}>
+                  {day}
+                </p>
+                <div className="space-y-0.5">
+                  {(eventsByDay[day] ?? []).slice(0, 2).map((ev) => (
+                    <Link
+                      key={ev.id}
+                      href={`/events/${ev.id}`}
+                      className="block truncate rounded bg-primary/10 px-1 py-0.5 text-[10px] text-primary hover:bg-primary/20"
+                      title={ev.titlu}
+                    >
+                      {ev.titlu}
+                    </Link>
+                  ))}
+                  {(eventsByDay[day]?.length ?? 0) > 2 && (
+                    <p className="text-[10px] text-muted">+{(eventsByDay[day]?.length ?? 0) - 2} more</p>
+                  )}
+                </div>
+              </>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
