@@ -1,24 +1,38 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "../../components/AuthProvider";
 import { GoogleLogin } from "@react-oauth/google";
 
+function getLandingPath(role: string): string {
+  if (role === "admin") return "/admin/reports";
+  if (role === "organizer") return "/organizer";
+  return "/events";
+}
+
 export default function LoginPage(): React.JSX.Element {
-  const { loginEmail, login, isLoading, error } = useAuth();
+  const { user, loginEmail, login, isLoading, error } = useAuth();
   const router = useRouter();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [localError, setLocalError] = useState<string | null>(null);
 
+  useEffect(() => {
+    if (user) {
+      router.replace(getLandingPath(user.role));
+    }
+  }, [user, router]);
+
   async function handleSubmit(e: FormEvent<HTMLFormElement>): Promise<void> {
     e.preventDefault();
     setLocalError(null);
     try {
-      await loginEmail(email, password);
-      router.push("/events");
+      const authUser = await loginEmail(email, password);
+      const target = getLandingPath(authUser.role);
+      router.replace(target);
+      router.refresh();
     } catch (err) {
       setLocalError(err instanceof Error ? err.message : "Login failed");
     }
@@ -27,8 +41,10 @@ export default function LoginPage(): React.JSX.Element {
   async function handleGoogleSuccess(credential: string): Promise<void> {
     setLocalError(null);
     try {
-      await login(credential);
-      router.push("/events");
+      const authUser = await login(credential);
+      const target = getLandingPath(authUser.role);
+      router.replace(target);
+      router.refresh();
     } catch (err) {
       setLocalError(err instanceof Error ? err.message : "Google sign-in failed");
     }

@@ -18,8 +18,8 @@ interface AuthContextType {
   user: AuthUser | null;
   isLoading: boolean;
   error: string | null;
-  login: (idToken: string) => Promise<void>;
-  loginEmail: (email: string, password: string) => Promise<void>;
+  login: (idToken: string) => Promise<AuthUser>;
+  loginEmail: (email: string, password: string) => Promise<AuthUser>;
   logout: () => void;
 }
 
@@ -58,9 +58,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }): React
     try {
       const authUser = await loginWithGoogleToken(idToken);
       persistUser(authUser);
+      return authUser;
     } catch (err) {
       const message = err instanceof Error ? err.message : "Sign-in failed";
       setError(message);
+      throw new Error(message);
     } finally {
       setIsLoading(false);
     }
@@ -72,9 +74,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }): React
     try {
       const authUser = await loginWithEmailPassword(email, password);
       persistUser(authUser);
+      return authUser;
     } catch (err) {
       const message = err instanceof Error ? err.message : "Sign-in failed";
       setError(message);
+      throw new Error(message);
     } finally {
       setIsLoading(false);
     }

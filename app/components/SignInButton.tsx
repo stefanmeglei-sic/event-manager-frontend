@@ -9,9 +9,21 @@ const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ?? "";
 export function SignInButton() {
   const { user, isLoading, error, login, logout } = useAuth();
 
+  function getLandingPath(role: string): string {
+    if (role === "admin") return "/admin/reports";
+    if (role === "organizer") return "/organizer";
+    return "/events";
+  }
+
   if (user) {
     return (
       <div className="flex items-center gap-3">
+        <Link
+          href={getLandingPath(user.role)}
+          className="rounded-full border border-border px-3 py-1.5 text-xs font-medium text-text transition hover:bg-surface-muted"
+        >
+          Home
+        </Link>
         {(user.role === "admin" || user.role === "organizer") && (
           <Link
             href="/events/new"

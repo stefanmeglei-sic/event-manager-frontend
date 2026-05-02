@@ -141,7 +141,11 @@ export default async function EventDetailPage({ params }: Props) {
         </div>
 
         <div className="border-t border-border pt-4 flex gap-3">
-          <EnrollButton eventId={id} />
+          <EnrollButton
+            eventId={id}
+            organizerId={event.organizer_id}
+            participationTypeId={event.tip_participare_id}
+          />
           <Link
             href={`/events/${id}/edit`}
             className="mt-8 inline-block rounded-xl border border-border px-5 py-2.5 text-sm font-semibold text-text hover:bg-surface-muted"
