@@ -3,8 +3,28 @@ import { apiFetch } from "@/lib/api/client";
 import type { Event, Location, EventCategory, EventStatus } from "@/lib/types";
 import EnrollButton from "./EnrollButton";
 import ValidateButtons from "./ValidateButtons";
+import FeedbackSection from "./FeedbackSection";
+import ExportCsvButton from "./ExportCsvButton";
 
 type Props = { params: Promise<{ id: string }> };
+
+function formatGoogleDate(iso: string): string {
+  // Convert ISO 8601 to YYYYMMDDTHHMMSSz (strip dashes/colons)
+  return iso.replace(/[-:]/g, "").replace(/\.\d+/, "");
+}
+
+function buildGoogleCalendarUrl(event: Event, locationName: string | undefined): string {
+  const start = formatGoogleDate(event.start_date);
+  const endIso = event.end_date ?? new Date(new Date(event.start_date).getTime() + 3600000).toISOString();
+  const end = formatGoogleDate(endIso);
+  const params = new URLSearchParams({
+    text: event.titlu,
+    dates: `${start}/${end}`,
+    ...(event.descriere ? { details: event.descriere } : {}),
+    ...(locationName ? { location: locationName } : {}),
+  });
+  return `https://calendar.google.com/calendar/r/eventedit?${params.toString()}`;
+}
 
 export default async function EventDetailPage({ params }: Props) {
   const { id } = await params;
@@ -133,6 +153,30 @@ export default async function EventDetailPage({ params }: Props) {
         {draftStatus && event.status_id === draftStatus.id && (
           <ValidateButtons eventId={id} />
         )}
+
+        {/* F5+F6: Calendar actions */}
+        <div className="border-t border-border pt-4 flex flex-wrap gap-3 items-center">
+          <a
+            href={`${process.env.NEXT_PUBLIC_BROWSER_API_URL ?? "http://localhost:8000/api/v1"}/events/${id}/ics`}
+            download
+            className="rounded-xl border border-border px-4 py-2 text-sm font-semibold text-text hover:bg-surface-muted transition"
+          >
+            📥 Add to Calendar
+          </a>
+          <a
+            href={buildGoogleCalendarUrl(event, location?.nume_sala)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="rounded-xl border border-border px-4 py-2 text-sm font-semibold text-text hover:bg-surface-muted transition"
+          >
+            📅 Google Calendar
+          </a>
+          {/* F11: CSV Export (client component checks role) */}
+          <ExportCsvButton eventId={id} />
+        </div>
+
+        {/* F7: Feedback section (client component, only shows when eligible) */}
+        <FeedbackSection eventId={id} eventEndDate={event.end_date} />
       </div>
     </main>
   );

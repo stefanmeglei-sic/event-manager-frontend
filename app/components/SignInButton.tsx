@@ -44,6 +44,14 @@ export function SignInButton() {
             Reports
           </Link>
         )}
+        {user.role === "organizer" && (
+          <Link
+            href="/organizer"
+            className="rounded-full border border-border px-3 py-1.5 text-xs font-medium text-text transition hover:bg-surface-muted"
+          >
+            My Events
+          </Link>
+        )}
         <Link
           href="/profile"
           className="rounded-full border border-border px-3 py-1.5 text-xs font-medium text-text transition hover:bg-surface-muted"
