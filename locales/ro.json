@@ -15,6 +15,7 @@
     "home": "Acasa",
     "new_event": "Eveniment nou",
     "locations": "Locatii",
+    "admin_events": "Aprobare evenimente",
     "users": "Utilizatori",
     "reports": "Rapoarte",
     "my_events": "Evenimentele mele",
@@ -77,6 +78,10 @@
     "room": "Sala",
     "actions": "Actiuni",
     "increase_capacity": "+10 locuri",
+    "save": "Salveaza",
+    "saving": "Se salveaza...",
+    "room_name_required": "Numele salii este obligatoriu",
+    "invalid_capacity": "Capacitatea trebuie sa fie mai mare decat 0",
     "failed_to_load": "Nu s-au putut incarca locatiile",
     "failed_to_create": "Nu s-a putut crea locatia",
     "failed_to_delete": "Nu s-a putut sterge locatia",
@@ -93,6 +98,21 @@
     "no_data": "Nu exista date inca.",
     "top_organizers": "Top organizatori",
     "events_suffix": "evenimente"
+  },
+  "admin_events": {
+    "title": "Aprobare Evenimente",
+    "subtitle": "Revizuieste si aproba sau respinge evenimentele in asteptare.",
+    "no_events": "Nu exista evenimente in asteptare.",
+    "failed_to_load": "Nu s-au putut incarca evenimentele.",
+    "loading": "Se incarca...",
+    "approve": "Aproba",
+    "reject": "Respinge",
+    "approving": "Se aproba...",
+    "rejecting": "Se respinge...",
+    "organizer": "Organizator",
+    "category": "Categorie",
+    "dates": "Date",
+    "action_ok": "Gata"
   },
   "events_page": {
     "title": "Evenimente",
@@ -214,7 +234,9 @@
     "create_button": "Creeaza eveniment",
     "creating_button": "Se creeaza...",
     "save_button": "Salveaza modificarile",
-    "saving_button": "Se salveaza..."
+    "saving_button": "Se salveaza...",
+    "cancel_event_button": "Anuleaza evenimentul",
+    "cancelling_button": "Se anuleaza..."
   },
   "api_docs": {
     "badge": "Frontend Swagger",

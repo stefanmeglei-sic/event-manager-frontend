@@ -12,24 +12,21 @@ import {
   getLocations,
   getParticipationTypes,
 } from "../../../../lib/api/lookups";
-import type { EventCategory, EventStatus, Location } from "../../../../lib/types";
-
-export default function NewEventPage(): React.JSX.Element {
+import type { EventCategory, EventStatus, Location } from "../../../../lib/types";export default function NewEventPage(): React.JSX.Element {
   const router = useRouter();
   const { t } = useLocale();
   const { user } = useAuth();
 
   const [categories, setCategories] = useState<EventCategory[]>([]);
-  const [statuses, setStatuses] = useState<EventStatus[]>([]);
   const [locations, setLocations] = useState<Location[]>([]);
   const [participationTypes, setParticipationTypes] = useState<EventStatus[]>([]);
+  const [draftStatusId, setDraftStatusId] = useState("");
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [categoryId, setCategoryId] = useState("");
-  const [statusId, setStatusId] = useState("");
   const [locationId, setLocationId] = useState("");
   const [participationTypeId, setParticipationTypeId] = useState("");
   const [maxParticipants, setMaxParticipants] = useState("");
@@ -53,11 +50,10 @@ export default function NewEventPage(): React.JSX.Element {
     ])
       .then(([cats, sts, locs, parts]) => {
         setCategories(cats);
-        setStatuses(sts);
         setLocations(locs);
         setParticipationTypes(parts);
         setCategoryId(cats[0]?.id ?? "");
-        setStatusId(sts.find((s) => s.nume === "draft")?.id ?? sts[0]?.id ?? "");
+        setDraftStatusId(sts.find((s) => s.nume === "draft")?.id ?? sts[0]?.id ?? "");
         setParticipationTypeId(parts[0]?.id ?? "");
       })
       .catch((err: unknown) => {
@@ -78,7 +74,7 @@ export default function NewEventPage(): React.JSX.Element {
         end_date: new Date(endDate).toISOString(),
         locatie_id: locationId || null,
         categorie_id: categoryId,
-        status_id: statusId,
+        status_id: draftStatusId,
         organizer_id: user.id,
         tip_participare_id: participationTypeId,
         max_participanti: maxParticipants ? Number(maxParticipants) : null,
@@ -171,18 +167,6 @@ export default function NewEventPage(): React.JSX.Element {
             >
               {categories.map((cat) => (
                 <option key={cat.id} value={cat.id}>{cat.nume}</option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm text-text">{t("event_form.status")}</label>
-            <select
-              value={statusId}
-              onChange={(e) => setStatusId(e.target.value)}
-              className="mt-1 w-full rounded-xl border border-border bg-surface-raised px-3 py-2 text-text"
-            >
-              {statuses.map((st) => (
-                <option key={st.id} value={st.id}>{st.nume}</option>
               ))}
             </select>
           </div>

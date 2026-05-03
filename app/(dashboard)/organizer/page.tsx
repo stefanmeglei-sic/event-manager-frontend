@@ -9,6 +9,7 @@ import { getEventEditPath, getEventPath } from "@/lib/events/slug";
 type CurrentUser = {
   id: string;
   email: string;
+  nume?: string | null;
   role: string;
 };
 
@@ -67,7 +68,7 @@ export default async function OrganizerPage(): Promise<React.JSX.Element> {
       <header className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-text">{translate(dictionary, "organizer.title")}</h1>
-          <p className="mt-1 text-sm text-muted">{currentUser.email}</p>
+          <p className="mt-1 text-sm text-muted">{currentUser.nume || currentUser.email}</p>
         </div>
         <Link
           href="/events/new"

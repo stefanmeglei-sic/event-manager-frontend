@@ -41,6 +41,8 @@ export default function EditEventPage(): React.JSX.Element {
   const [registrationLink, setRegistrationLink] = useState("");
   const [eventId, setEventId] = useState<string | null>(null);
   const [organizerId, setOrganizerId] = useState<string | null>(null);
+  const [currentStatusName, setCurrentStatusName] = useState<string | null>(null);
+  const [isCancelling, setIsCancelling] = useState(false);
 
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -76,6 +78,7 @@ export default function EditEventPage(): React.JSX.Element {
         setParticipationTypes(parts);
         setEventId(event.id);
         setOrganizerId(event.organizer_id);
+        setCurrentStatusName(sts.find((s) => s.id === event.status_id)?.nume ?? null);
 
         setTitle(event.titlu);
         setDescription(event.descriere ?? "");
@@ -94,6 +97,25 @@ export default function EditEventPage(): React.JSX.Element {
         setError(err instanceof Error ? err.message : t("event_form.failed_to_load_event"));
       });
   }, [slug, t]);
+
+  async function cancelEvent(): Promise<void> {
+    if (!eventId) return;
+    setIsCancelling(true);
+    setError(null);
+    try {
+      const cancelledId = statuses.find((s) => s.nume === "cancelled")?.id;
+      if (!cancelledId) throw new Error("cancelled status not found");
+      await apiFetch(`/events/${eventId}`, {
+        method: "PATCH",
+        body: JSON.stringify({ status_id: cancelledId }),
+      });
+      router.push("/events");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t("event_form.failed_to_update"));
+    } finally {
+      setIsCancelling(false);
+    }
+  }
 
   async function onSubmit(e: FormEvent<HTMLFormElement>): Promise<void> {
     e.preventDefault();
@@ -219,18 +241,20 @@ export default function EditEventPage(): React.JSX.Element {
               ))}
             </select>
           </div>
-          <div>
-            <label className="block text-sm text-text">{t("event_form.status")}</label>
-            <select
-              value={statusId}
-              onChange={(e) => setStatusId(e.target.value)}
-              className="mt-1 w-full rounded-xl border border-border bg-surface-raised px-3 py-2 text-text"
-            >
-              {statuses.map((st) => (
-                <option key={st.id} value={st.id}>{st.nume}</option>
-              ))}
-            </select>
-          </div>
+          {user?.role === "admin" && (
+            <div>
+              <label className="block text-sm text-text">{t("event_form.status")}</label>
+              <select
+                value={statusId}
+                onChange={(e) => setStatusId(e.target.value)}
+                className="mt-1 w-full rounded-xl border border-border bg-surface-raised px-3 py-2 text-text"
+              >
+                {statuses.map((st) => (
+                  <option key={st.id} value={st.id}>{st.nume}</option>
+                ))}
+              </select>
+            </div>
+          )}
         </div>
 
         <div className="grid gap-4 md:grid-cols-2">
@@ -298,7 +322,7 @@ export default function EditEventPage(): React.JSX.Element {
           </p>
         )}
 
-        <div className="flex gap-3">
+        <div className="flex flex-wrap gap-3">
           <button
             type="submit"
             disabled={isSaving}
@@ -313,6 +337,18 @@ export default function EditEventPage(): React.JSX.Element {
           >
             {t("common.cancel")}
           </button>
+          {user?.role === "organizer" &&
+            currentStatusName !== "cancelled" &&
+            currentStatusName !== "completed" && (
+              <button
+                type="button"
+                onClick={cancelEvent}
+                disabled={isCancelling}
+                className="rounded-xl border border-danger/40 bg-danger-bg px-5 py-2.5 text-sm font-semibold text-danger hover:opacity-80 disabled:opacity-50"
+              >
+                {isCancelling ? t("event_form.cancelling_button") : t("event_form.cancel_event_button")}
+              </button>
+          )}
         </div>
       </form>
     </main>

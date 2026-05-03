@@ -44,6 +44,14 @@ export function SignInButton() {
         )}
         {user.role === "admin" && (
           <Link
+            href="/admin/events"
+            className="rounded-full border border-border px-3 py-1.5 text-[11px] font-medium text-text transition hover:bg-surface-muted sm:text-xs"
+          >
+            {t("nav.admin_events")}
+          </Link>
+        )}
+        {user.role === "admin" && (
+          <Link
             href="/admin/users"
             className="rounded-full border border-border px-3 py-1.5 text-[11px] font-medium text-text transition hover:bg-surface-muted sm:text-xs"
           >
@@ -72,8 +80,8 @@ export function SignInButton() {
         >
           {t("nav.profile")}
         </Link>
-        <span className="basis-full text-right text-xs text-muted sm:basis-auto sm:max-w-[200px] sm:truncate sm:text-sm" title={user.email}>
-          {user.email} ({user.role})
+        <span className="basis-full text-right text-xs text-muted sm:basis-auto sm:max-w-[240px] sm:truncate sm:text-sm" title={user.email}>
+          {(user.role === "organizer" || user.role === "admin") && user.nume ? user.nume : user.email} ({user.role})
         </span>
         <button
           onClick={logout}

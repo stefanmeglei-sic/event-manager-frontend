@@ -12,6 +12,12 @@ import {
 } from "../../../../lib/api/locations";
 import type { Location } from "../../../../lib/types";
 
+type LocationDraft = {
+  nume_sala: string;
+  corp_cladire: string;
+  capacitate: string;
+};
+
 export default function AdminLocationsPage(): React.JSX.Element {
   const { t } = useLocale();
   const { user } = useAuth();
@@ -21,12 +27,23 @@ export default function AdminLocationsPage(): React.JSX.Element {
   const [name, setName] = useState("");
   const [building, setBuilding] = useState("");
   const [capacity, setCapacity] = useState("");
+  const [locationDrafts, setLocationDrafts] = useState<Record<string, LocationDraft>>({});
+  const [savingLocationId, setSavingLocationId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  function toDraft(loc: Location): LocationDraft {
+    return {
+      nume_sala: loc.nume_sala,
+      corp_cladire: loc.corp_cladire ?? "",
+      capacitate: loc.capacitate?.toString() ?? "",
+    };
+  }
 
   const loadLocations = useCallback(async (): Promise<void> => {
     try {
       const data = await listLocations();
       setLocations(data);
+      setLocationDrafts(Object.fromEntries(data.map((loc) => [loc.id, toDraft(loc)])));
     } catch (err) {
       setError(err instanceof Error ? err.message : t("admin_locations.failed_to_load"));
     }
@@ -42,6 +59,7 @@ export default function AdminLocationsPage(): React.JSX.Element {
       .then((data) => {
         if (!active) return;
         setLocations(data);
+        setLocationDrafts(Object.fromEntries(data.map((loc) => [loc.id, toDraft(loc)])));
       })
       .catch((err: unknown) => {
         if (!active) return;
@@ -81,13 +99,35 @@ export default function AdminLocationsPage(): React.JSX.Element {
     }
   }
 
-  async function onUpdateCapacity(id: string, nextCapacity: number): Promise<void> {
+  async function onSaveLocation(id: string): Promise<void> {
+    const draft = locationDrafts[id];
+    if (!draft) return;
+
+    const trimmedName = draft.nume_sala.trim();
+    if (!trimmedName) {
+      setError(t("admin_locations.room_name_required"));
+      return;
+    }
+
+    const normalizedCapacity = draft.capacitate.trim();
+    if (normalizedCapacity && Number(normalizedCapacity) <= 0) {
+      setError(t("admin_locations.invalid_capacity"));
+      return;
+    }
+
     setError(null);
+    setSavingLocationId(id);
     try {
-      await updateLocation(id, { capacitate: nextCapacity });
+      await updateLocation(id, {
+        nume_sala: trimmedName,
+        corp_cladire: draft.corp_cladire.trim() || null,
+        capacitate: normalizedCapacity ? Number(normalizedCapacity) : null,
+      });
       await loadLocations();
     } catch (err) {
       setError(err instanceof Error ? err.message : t("admin_locations.failed_to_update"));
+    } finally {
+      setSavingLocationId(null);
     }
   }
 
@@ -149,18 +189,49 @@ export default function AdminLocationsPage(): React.JSX.Element {
           {locations.map((loc) => (
             <article key={loc.id} className="rounded-xl border border-border bg-surface-raised p-4">
               <p className="text-sm font-semibold text-text">{loc.nume_sala}</p>
-              <p className="mt-1 text-xs text-muted">
-                {t("admin_locations.building")}: {loc.corp_cladire ?? "-"}
-              </p>
-              <p className="mt-1 text-xs text-muted">
-                {t("admin_locations.capacity")}: {loc.capacitate ?? "-"}
-              </p>
+              <div className="mt-3 grid gap-2">
+                <input
+                  value={locationDrafts[loc.id]?.nume_sala ?? ""}
+                  onChange={(e) =>
+                    setLocationDrafts((prev) => ({
+                      ...prev,
+                      [loc.id]: { ...(prev[loc.id] ?? toDraft(loc)), nume_sala: e.target.value },
+                    }))
+                  }
+                  placeholder={t("admin_locations.room_name")}
+                  className="rounded-lg border border-border bg-surface px-3 py-1.5 text-sm text-text"
+                />
+                <input
+                  value={locationDrafts[loc.id]?.corp_cladire ?? ""}
+                  onChange={(e) =>
+                    setLocationDrafts((prev) => ({
+                      ...prev,
+                      [loc.id]: { ...(prev[loc.id] ?? toDraft(loc)), corp_cladire: e.target.value },
+                    }))
+                  }
+                  placeholder={t("admin_locations.building")}
+                  className="rounded-lg border border-border bg-surface px-3 py-1.5 text-sm text-text"
+                />
+                <input
+                  type="number"
+                  min={1}
+                  value={locationDrafts[loc.id]?.capacitate ?? ""}
+                  onChange={(e) =>
+                    setLocationDrafts((prev) => ({
+                      ...prev,
+                      [loc.id]: { ...(prev[loc.id] ?? toDraft(loc)), capacitate: e.target.value },
+                    }))
+                  }
+                  placeholder={t("admin_locations.capacity")}
+                  className="rounded-lg border border-border bg-surface px-3 py-1.5 text-sm text-text"
+                />
+              </div>
               <div className="mt-4 flex flex-wrap items-center gap-2">
                 <button
-                  onClick={() => onUpdateCapacity(loc.id, (loc.capacitate ?? 0) + 10)}
+                  onClick={() => onSaveLocation(loc.id)}
                   className="rounded-lg border border-border px-2 py-1 text-xs text-text hover:bg-surface-muted"
                 >
-                  {t("admin_locations.increase_capacity")}
+                  {savingLocationId === loc.id ? t("admin_locations.saving") : t("admin_locations.save")}
                 </button>
                 <button
                   onClick={() => onDelete(loc.id)}
@@ -185,16 +256,51 @@ export default function AdminLocationsPage(): React.JSX.Element {
           <tbody className="divide-y divide-border">
             {locations.map((loc) => (
               <tr key={loc.id}>
-                <td className="px-4 py-3 text-text">{loc.nume_sala}</td>
-                <td className="px-4 py-3 text-muted">{loc.corp_cladire ?? "-"}</td>
-                <td className="px-4 py-3 text-muted">{loc.capacitate ?? "-"}</td>
+                <td className="px-4 py-3 text-text">
+                  <input
+                    value={locationDrafts[loc.id]?.nume_sala ?? ""}
+                    onChange={(e) =>
+                      setLocationDrafts((prev) => ({
+                        ...prev,
+                        [loc.id]: { ...(prev[loc.id] ?? toDraft(loc)), nume_sala: e.target.value },
+                      }))
+                    }
+                    className="w-full rounded-lg border border-border bg-surface-raised px-2 py-1 text-sm text-text"
+                  />
+                </td>
+                <td className="px-4 py-3 text-muted">
+                  <input
+                    value={locationDrafts[loc.id]?.corp_cladire ?? ""}
+                    onChange={(e) =>
+                      setLocationDrafts((prev) => ({
+                        ...prev,
+                        [loc.id]: { ...(prev[loc.id] ?? toDraft(loc)), corp_cladire: e.target.value },
+                      }))
+                    }
+                    className="w-full rounded-lg border border-border bg-surface-raised px-2 py-1 text-sm text-text"
+                  />
+                </td>
+                <td className="px-4 py-3 text-muted">
+                  <input
+                    type="number"
+                    min={1}
+                    value={locationDrafts[loc.id]?.capacitate ?? ""}
+                    onChange={(e) =>
+                      setLocationDrafts((prev) => ({
+                        ...prev,
+                        [loc.id]: { ...(prev[loc.id] ?? toDraft(loc)), capacitate: e.target.value },
+                      }))
+                    }
+                    className="w-full rounded-lg border border-border bg-surface-raised px-2 py-1 text-sm text-text"
+                  />
+                </td>
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-2">
                     <button
-                      onClick={() => onUpdateCapacity(loc.id, (loc.capacitate ?? 0) + 10)}
+                      onClick={() => onSaveLocation(loc.id)}
                       className="rounded-lg border border-border px-2 py-1 text-xs text-text hover:bg-surface-muted"
                     >
-                      {t("admin_locations.increase_capacity")}
+                      {savingLocationId === loc.id ? t("admin_locations.saving") : t("admin_locations.save")}
                     </button>
                     <button
                       onClick={() => onDelete(loc.id)}

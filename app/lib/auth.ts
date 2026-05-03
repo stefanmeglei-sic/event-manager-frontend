@@ -6,6 +6,7 @@ export interface AuthUser {
   id: string;
   token: string;
   email: string;
+  nume?: string | null;
   role: string;
 }
 
@@ -59,9 +60,10 @@ async function fetchMe(token: string, locale?: Locale): Promise<AuthUser> {
   const user = (await response.json()) as {
     id: string;
     email: string;
+    nume?: string | null;
     role: string;
   };
-  return { id: user.id, token, email: user.email, role: user.role };
+  return { id: user.id, token, email: user.email, nume: user.nume, role: user.role };
 }
 
 export async function loginWithEmailPassword(

@@ -7,7 +7,7 @@ type Summary = {
   total_events: number;
   total_registrations: number;
   avg_participants_per_event: number;
-  top_organizers: Array<{ organizer_id: string; event_count: number }>;
+  top_organizers: Array<{ organizer_id: string; organizer_name: string; event_count: number }>;
 };
 
 type MonthCount = { month: string; count: number };
@@ -77,8 +77,8 @@ export default function AdminReportsPage() {
           <div className="space-y-2">
             {summary.top_organizers.map((o, i) => (
               <div key={o.organizer_id} className="flex flex-col gap-1 text-sm sm:flex-row sm:items-center sm:justify-between">
-                <span className="max-w-full break-all text-muted font-mono text-xs sm:max-w-[70%] sm:truncate">
-                  {i + 1}. {o.organizer_id}
+                <span className="max-w-full break-all text-muted text-xs sm:max-w-[70%] sm:truncate">
+                  {i + 1}. {o.organizer_name}
                 </span>
                 <span className="text-text font-medium">{o.event_count} {t("reports.events_suffix")}</span>
               </div>

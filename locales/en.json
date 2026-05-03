@@ -15,6 +15,7 @@
     "home": "Home",
     "new_event": "New event",
     "locations": "Locations",
+    "admin_events": "Approve Events",
     "users": "Users",
     "reports": "Reports",
     "my_events": "My Events",
@@ -77,6 +78,10 @@
     "room": "Room",
     "actions": "Actions",
     "increase_capacity": "+10 cap",
+    "save": "Save",
+    "saving": "Saving...",
+    "room_name_required": "Room name is required",
+    "invalid_capacity": "Capacity must be greater than 0",
     "failed_to_load": "Failed to load locations",
     "failed_to_create": "Failed to create location",
     "failed_to_delete": "Failed to delete location",
@@ -93,6 +98,21 @@
     "no_data": "No data yet.",
     "top_organizers": "Top Organizers",
     "events_suffix": "events"
+  },
+  "admin_events": {
+    "title": "Event Approvals",
+    "subtitle": "Review and approve or reject draft events.",
+    "no_events": "No draft events pending approval.",
+    "failed_to_load": "Failed to load events.",
+    "loading": "Loading...",
+    "approve": "Approve",
+    "reject": "Reject",
+    "approving": "Approving...",
+    "rejecting": "Rejecting...",
+    "organizer": "Organizer",
+    "category": "Category",
+    "dates": "Dates",
+    "action_ok": "Done"
   },
   "events_page": {
     "title": "Events",
@@ -214,7 +234,9 @@
     "create_button": "Create event",
     "creating_button": "Creating...",
     "save_button": "Save changes",
-    "saving_button": "Saving..."
+    "saving_button": "Saving...",
+    "cancel_event_button": "Cancel event",
+    "cancelling_button": "Cancelling..."
   },
   "api_docs": {
     "badge": "Swagger Frontend",
