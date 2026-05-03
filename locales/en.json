@@ -61,10 +61,24 @@
   },
   "admin_users": {
     "title": "User Management",
+    "name": "Name",
     "email": "Email",
     "role": "Role",
     "joined": "Joined",
-    "load_more": "Load more"
+    "actions": "Actions",
+    "load_more": "Load more",
+    "save": "Save",
+    "saving": "Saving...",
+    "reset_password": "Reset password",
+    "resetting_password": "Resetting...",
+    "ban": "Ban",
+    "banning": "Banning...",
+    "confirm_ban": "Ban this user?",
+    "new_password_prompt": "Enter a new password (minimum 8 characters):",
+    "password_too_short": "Password must be at least 8 characters",
+    "failed_to_load": "Failed to load users",
+    "failed_to_update": "Failed to update user",
+    "failed_to_ban": "Failed to ban user"
   },
   "admin_locations": {
     "title": "Manage Locations",

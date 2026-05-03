@@ -61,10 +61,24 @@
   },
   "admin_users": {
     "title": "Administrare utilizatori",
+    "name": "Nume",
     "email": "Email",
     "role": "Rol",
     "joined": "Adaugat",
-    "load_more": "Incarca mai mult"
+    "actions": "Actiuni",
+    "load_more": "Incarca mai mult",
+    "save": "Salveaza",
+    "saving": "Se salveaza...",
+    "reset_password": "Reseteaza parola",
+    "resetting_password": "Se reseteaza...",
+    "ban": "Blocheaza",
+    "banning": "Se blocheaza...",
+    "confirm_ban": "Blochezi acest utilizator?",
+    "new_password_prompt": "Introdu o parola noua (minimum 8 caractere):",
+    "password_too_short": "Parola trebuie sa aiba minimum 8 caractere",
+    "failed_to_load": "Nu s-au putut incarca utilizatorii",
+    "failed_to_update": "Nu s-a putut actualiza utilizatorul",
+    "failed_to_ban": "Nu s-a putut bloca utilizatorul"
   },
   "admin_locations": {
     "title": "Administrare locatii",
