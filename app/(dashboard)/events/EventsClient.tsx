@@ -123,7 +123,7 @@ export function EventsClient({
   return (
     <div className="space-y-6">
       {/* View toggle */}
-      <div className="flex gap-2">
+      <div className="flex flex-wrap gap-2">
         <button
           onClick={() => setView("list")}
           className={`rounded-full px-3 py-1.5 text-xs font-medium border transition ${view === "list" ? "bg-primary text-on-primary border-primary" : "border-border text-text hover:bg-surface-muted"}`}
@@ -151,13 +151,13 @@ export function EventsClient({
           }
         }}
         placeholder={t("events_filters.search_placeholder")}
-        className="w-full max-w-sm rounded-full border border-border bg-surface px-4 py-1.5 text-sm text-text placeholder:text-muted focus:outline-none focus:ring-1 focus:ring-border"
+        className="w-full rounded-2xl border border-border bg-surface px-4 py-2 text-sm text-text placeholder:text-muted focus:outline-none focus:ring-1 focus:ring-border sm:max-w-sm"
       />
 
       {/* Date range */}
-      <div className="flex flex-wrap items-center gap-3">
+      <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center">
         <span className="text-xs font-medium text-muted">{t("events_filters.date")}</span>
-        <div className="flex items-center gap-2">
+        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
           <input
             type="date"
             value={dateFrom}
@@ -167,9 +167,9 @@ export function EventsClient({
                 applyFilter({ from: e.target.value }).catch(() => undefined);
               });
             }}
-            className="rounded-lg border border-border bg-surface px-3 py-1 text-sm text-text focus:outline-none focus:ring-1 focus:ring-border"
+            className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text focus:outline-none focus:ring-1 focus:ring-border sm:w-auto"
           />
-          <span className="text-xs text-muted">-</span>
+          <span className="hidden text-xs text-muted sm:inline">-</span>
           <input
             type="date"
             value={dateTo}
@@ -180,14 +180,14 @@ export function EventsClient({
                 applyFilter({ to: e.target.value }).catch(() => undefined);
               });
             }}
-            className="rounded-lg border border-border bg-surface px-3 py-1 text-sm text-text focus:outline-none focus:ring-1 focus:ring-border"
+            className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text focus:outline-none focus:ring-1 focus:ring-border sm:w-auto"
           />
         </div>
       </div>
 
       {/* Location dropdown */}
       {locations.length > 0 && (
-        <div className="flex items-center gap-3">
+        <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center">
           <span className="text-xs font-medium text-muted">{t("events_filters.location")}</span>
           <select
             value={selectedLocation}
@@ -197,7 +197,7 @@ export function EventsClient({
                 applyFilter({ locationId: e.target.value }).catch(() => undefined);
               });
             }}
-            className="rounded-lg border border-border bg-surface px-3 py-1 text-sm text-text focus:outline-none focus:ring-1 focus:ring-border"
+            className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text focus:outline-none focus:ring-1 focus:ring-border sm:w-auto"
           >
             <option value="">{t("events_filters.all_locations")}</option>
             {locations.map((loc) => (
@@ -353,7 +353,7 @@ export function EventsClient({
           <button
             onClick={handleLoadMore}
             disabled={isPending}
-            className="rounded-xl border border-border bg-surface px-6 py-2.5 text-sm font-medium text-text shadow-sm transition hover:bg-surface-raised disabled:opacity-50"
+            className="w-full rounded-xl border border-border bg-surface px-6 py-2.5 text-sm font-medium text-text shadow-sm transition hover:bg-surface-raised disabled:opacity-50 sm:w-auto"
           >
             {isPending ? "Loading…" : "Load more"}
           </button>

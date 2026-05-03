@@ -62,22 +62,22 @@ export default async function OrganizerPage(): Promise<React.JSX.Element> {
   const totalRegistrations = 0; // count not available from list endpoint
 
   return (
-    <main className="mx-auto max-w-5xl px-4 py-10">
-      <header className="mb-8 flex items-center justify-between">
+    <main className="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6 sm:py-10">
+      <header className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-text">{translate(dictionary, "organizer.title")}</h1>
           <p className="mt-1 text-sm text-muted">{currentUser.email}</p>
         </div>
         <Link
           href="/events/new"
-          className="rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-on-primary hover:opacity-90 transition"
+          className="w-full rounded-xl bg-primary px-5 py-2.5 text-center text-sm font-semibold text-on-primary transition hover:opacity-90 sm:w-auto"
         >
           + {translate(dictionary, "organizer.create_new")}
         </Link>
       </header>
 
       {/* Summary cards */}
-      <div className="grid gap-4 md:grid-cols-3 mb-8">
+      <div className="mb-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         <div className="rounded-2xl border border-border bg-surface p-6">
           <p className="text-xs text-muted uppercase tracking-wider mb-1">{translate(dictionary, "organizer.total_events")}</p>
           <p className="text-3xl font-bold text-text">{events.length}</p>
@@ -105,7 +105,35 @@ export default async function OrganizerPage(): Promise<React.JSX.Element> {
             </Link>
           </div>
         ) : (
-          <div className="overflow-x-auto bg-surface">
+          <>
+            <div className="space-y-3 bg-surface p-4 md:hidden">
+              {events.map((event) => (
+                <article key={event.id} className="rounded-xl border border-border bg-surface-raised p-4">
+                  <h3 className="text-sm font-semibold text-text">{event.titlu}</h3>
+                  <p className="mt-2 text-xs text-muted">
+                    {new Date(event.start_date).toLocaleString(dateLocale)}
+                  </p>
+                  <p className="mt-1 text-xs text-muted">
+                    {translate(dictionary, "organizer.location_id_col")}: {event.locatie_id ?? translate(dictionary, "common.none")}
+                  </p>
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    <Link
+                      href={`/events/${event.id}`}
+                      className="rounded-lg border border-border px-3 py-1 text-xs text-text transition hover:bg-surface-muted"
+                    >
+                      {translate(dictionary, "common.view")}
+                    </Link>
+                    <Link
+                      href={`/events/${event.id}/edit`}
+                      className="rounded-lg border border-border px-3 py-1 text-xs text-text transition hover:bg-surface-muted"
+                    >
+                      {translate(dictionary, "common.edit")}
+                    </Link>
+                  </div>
+                </article>
+              ))}
+            </div>
+            <div className="hidden overflow-x-auto bg-surface md:block">
             <table className="w-full text-sm">
               <thead className="border-b border-border bg-surface-raised">
                 <tr>
@@ -145,7 +173,8 @@ export default async function OrganizerPage(): Promise<React.JSX.Element> {
                 ))}
               </tbody>
             </table>
-          </div>
+            </div>
+          </>
         )}
       </div>
     </main>

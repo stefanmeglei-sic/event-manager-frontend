@@ -38,16 +38,28 @@ export default async function RootLayout({
     >
       <body className="min-h-full flex flex-col">
         <Providers initialLocale={locale}>
-          <nav className="sticky top-0 z-50 flex items-center justify-between border-b border-border bg-surface/90 px-6 py-3 backdrop-blur md:px-10">
-            <Link
-              href="/"
-              className="text-sm font-semibold tracking-tight text-text transition hover:text-primary"
-            >
-              {translate(dictionary, "app.name")}
-            </Link>
-            <div className="flex items-center gap-3">
-              <LanguageSwitcher />
-              <SignInButton />
+          <nav className="sticky top-0 z-50 border-b border-border bg-surface/90 px-4 py-3 backdrop-blur sm:px-6 md:px-10">
+            <div className="mx-auto w-full max-w-7xl">
+              {/* Top row: title always left, lang toggle always right */}
+              <div className="flex items-center justify-between">
+                <Link
+                  href="/"
+                  className="text-sm font-semibold tracking-tight text-text transition hover:text-primary"
+                >
+                  {translate(dictionary, "app.name")}
+                </Link>
+                <div className="flex items-center gap-4">
+                  {/* On sm+ show nav controls inline beside lang toggle */}
+                  <div className="hidden sm:flex sm:items-center sm:gap-3">
+                    <SignInButton />
+                  </div>
+                  <LanguageSwitcher />
+                </div>
+              </div>
+              {/* Mobile-only second row for nav controls */}
+              <div className="mt-2 sm:hidden">
+                <SignInButton />
+              </div>
             </div>
           </nav>
           {children}

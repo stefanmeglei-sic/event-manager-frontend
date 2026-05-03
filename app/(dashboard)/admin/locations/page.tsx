@@ -93,7 +93,7 @@ export default function AdminLocationsPage(): React.JSX.Element {
 
   if (!user) {
     return (
-      <main className="mx-auto w-full max-w-5xl px-6 py-10 md:px-10">
+      <main className="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6 sm:py-10 md:px-10">
         <p className="text-muted">{t("common.loading_user")}</p>
       </main>
     );
@@ -101,7 +101,7 @@ export default function AdminLocationsPage(): React.JSX.Element {
 
   if (!isAdmin) {
     return (
-      <main className="mx-auto w-full max-w-5xl px-6 py-10 md:px-10">
+      <main className="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6 sm:py-10 md:px-10">
         <h1 className="text-3xl font-bold tracking-tight text-text">{t("admin_locations.restricted_title")}</h1>
         <p className="mt-3 rounded-xl border border-danger/30 bg-danger-bg p-4 text-danger">
           {t("admin_locations.restricted_message")}
@@ -111,7 +111,7 @@ export default function AdminLocationsPage(): React.JSX.Element {
   }
 
   return (
-    <main className="mx-auto w-full max-w-5xl px-6 py-10 md:px-10">
+    <main className="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6 sm:py-10 md:px-10">
       <h1 className="text-3xl font-bold tracking-tight text-text">{t("admin_locations.title")}</h1>
       <p className="mt-1 text-sm text-muted">{t("admin_locations.subtitle")}</p>
 
@@ -144,7 +144,35 @@ export default function AdminLocationsPage(): React.JSX.Element {
 
       {error && <p className="mt-4 rounded-xl border border-danger/30 bg-danger-bg p-3 text-sm text-danger">{error}</p>}
 
-      <div className="mt-6 overflow-x-auto rounded-2xl border border-border bg-surface">
+      <div className="mt-6 rounded-2xl border border-border bg-surface">
+        <div className="space-y-3 p-4 md:hidden">
+          {locations.map((loc) => (
+            <article key={loc.id} className="rounded-xl border border-border bg-surface-raised p-4">
+              <p className="text-sm font-semibold text-text">{loc.nume_sala}</p>
+              <p className="mt-1 text-xs text-muted">
+                {t("admin_locations.building")}: {loc.corp_cladire ?? "-"}
+              </p>
+              <p className="mt-1 text-xs text-muted">
+                {t("admin_locations.capacity")}: {loc.capacitate ?? "-"}
+              </p>
+              <div className="mt-4 flex flex-wrap items-center gap-2">
+                <button
+                  onClick={() => onUpdateCapacity(loc.id, (loc.capacitate ?? 0) + 10)}
+                  className="rounded-lg border border-border px-2 py-1 text-xs text-text hover:bg-surface-muted"
+                >
+                  {t("admin_locations.increase_capacity")}
+                </button>
+                <button
+                  onClick={() => onDelete(loc.id)}
+                  className="rounded-lg border border-danger/40 px-2 py-1 text-xs text-danger hover:bg-danger-bg"
+                >
+                  {t("common.delete")}
+                </button>
+              </div>
+            </article>
+          ))}
+        </div>
+        <div className="hidden overflow-x-auto md:block">
         <table className="min-w-full divide-y divide-border">
           <thead>
             <tr className="text-left text-xs uppercase tracking-wide text-subtle">
@@ -180,6 +208,7 @@ export default function AdminLocationsPage(): React.JSX.Element {
             ))}
           </tbody>
         </table>
+        </div>
       </div>
     </main>
   );

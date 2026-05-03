@@ -66,9 +66,29 @@ export default function AdminUsersPage() {
   }, [token]);
 
   return (
-    <main className="mx-auto max-w-5xl px-4 py-10">
-      <h1 className="text-2xl font-bold text-text mb-6">{t("admin_users.title")}</h1>
-      <div className="overflow-x-auto rounded-xl border border-border">
+    <main className="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6 sm:py-10">
+      <h1 className="mb-6 text-2xl font-bold text-text">{t("admin_users.title")}</h1>
+      <div className="rounded-xl border border-border">
+        <div className="space-y-3 bg-surface p-4 md:hidden">
+          {loading && users.length === 0 ? (
+            <p className="rounded-xl border border-border bg-surface-raised px-4 py-6 text-center text-sm text-muted">
+              {t("common.loading")}
+            </p>
+          ) : (
+            users.map((u) => (
+              <article key={u.id} className="rounded-xl border border-border bg-surface-raised p-4">
+                <p className="break-all text-sm font-medium text-text">{u.email}</p>
+                <p className="mt-2 text-xs text-muted capitalize">
+                  {t("admin_users.role")}: {u.role_name}
+                </p>
+                <p className="mt-1 text-xs text-muted">
+                  {t("admin_users.joined")}: {new Date(u.created_at).toLocaleDateString()}
+                </p>
+              </article>
+            ))
+          )}
+        </div>
+        <div className="hidden overflow-x-auto md:block">
         <table className="w-full text-sm">
           <thead className="border-b border-border bg-surface-raised">
             <tr>
@@ -97,13 +117,14 @@ export default function AdminUsersPage() {
             )}
           </tbody>
         </table>
+        </div>
       </div>
       {cursor && (
         <div className="mt-6 text-center">
           <button
             onClick={() => void loadMore(cursor, false)}
             disabled={loading}
-            className="rounded-full border border-border px-4 py-2 text-sm text-text hover:bg-surface-muted disabled:opacity-50"
+            className="w-full rounded-full border border-border px-4 py-2 text-sm text-text hover:bg-surface-muted disabled:opacity-50 sm:w-auto"
           >
             {loading ? t("common.loading") : t("admin_users.load_more")}
           </button>

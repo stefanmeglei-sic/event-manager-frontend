@@ -1,9 +1,25 @@
-import { getStoredLocale } from "@/lib/i18n/client";
+import { LOCALE_COOKIE_NAME, LOCALE_STORAGE_KEY, getDefaultLocale, normalizeLocale } from "@/lib/i18n/config";
 
 type ApiFetchOptions = Omit<RequestInit, 'headers'> & {
   token?: string;
+  locale?: string;
   headers?: Record<string, string>;
 };
+
+function getLocale(override?: string): string {
+  if (override) return override;
+  // Server-side: no access to window/document, return default
+  if (typeof window === 'undefined') return getDefaultLocale();
+  // Client-side: prefer localStorage, fall back to cookie, then default
+  const stored = window.localStorage.getItem(LOCALE_STORAGE_KEY);
+  if (stored) return normalizeLocale(stored);
+  const cookie = document.cookie
+    .split(';')
+    .map((p) => p.trim())
+    .find((p) => p.startsWith(`${LOCALE_COOKIE_NAME}=`))
+    ?.split('=', 2)[1];
+  return normalizeLocale(cookie ?? getDefaultLocale());
+}
 
 function getBaseUrl(): string {
   if (typeof window === 'undefined') {
@@ -32,7 +48,7 @@ export async function apiFetch<T>(
 
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
-    'X-Locale': getStoredLocale(),
+    'X-Locale': getLocale(options?.locale),
     ...(options?.headers ?? {}),
   };
 
@@ -46,8 +62,9 @@ export async function apiFetch<T>(
     headers['Authorization'] = `Bearer ${token}`;
   }
 
-  const { token: tokenOption, headers: headersOption, ...restOptions } = options ?? {};
+  const { token: tokenOption, locale: localeOption, headers: headersOption, ...restOptions } = options ?? {};
   void tokenOption;
+  void localeOption;
   void headersOption;
 
   const response = await fetch(url, {

@@ -32,18 +32,54 @@ export function CalendarView({ events }: Props) {
   while (cells.length % 7 !== 0) cells.push(null);
 
   const monthName = now.toLocaleString("ro-RO", { month: "long", year: "numeric" });
+  const daysWithEvents = Object.entries(eventsByDay)
+    .map(([day, dayEvents]) => ({ day: Number(day), dayEvents }))
+    .sort((left, right) => left.day - right.day);
 
   return (
-    <div className="rounded-xl border border-border bg-surface overflow-hidden">
+    <div className="overflow-hidden rounded-xl border border-border bg-surface">
       <div className="px-4 py-3 border-b border-border">
         <p className="text-sm font-semibold text-text capitalize">{monthName}</p>
       </div>
-      <div className="grid grid-cols-7 border-b border-border">
+      <div className="divide-y divide-border md:hidden">
+        {daysWithEvents.length === 0 ? (
+          <p className="px-4 py-6 text-sm text-muted">No events this month.</p>
+        ) : (
+          daysWithEvents.map(({ day, dayEvents }) => (
+            <div key={day} className="space-y-3 px-4 py-4">
+              <div>
+                <p className={`text-sm font-semibold ${day === now.getDate() ? "text-primary" : "text-text"}`}>
+                  {day}
+                </p>
+                <p className="text-xs text-muted">{dayEvents.length} event{dayEvents.length === 1 ? "" : "s"}</p>
+              </div>
+              <div className="space-y-2">
+                {dayEvents.map((ev) => (
+                  <Link
+                    key={ev.id}
+                    href={`/events/${ev.id}`}
+                    className="block rounded-lg border border-border bg-surface-raised px-3 py-2 transition hover:border-primary/40"
+                  >
+                    <p className="text-sm font-medium text-text">{ev.titlu}</p>
+                    <p className="mt-1 text-xs text-muted">
+                      {new Date(ev.start_date).toLocaleTimeString("ro-RO", {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </p>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+      <div className="hidden md:grid md:grid-cols-7 md:border-b md:border-border">
         {dayNames.map((d) => (
           <div key={d} className="px-2 py-2 text-center text-xs text-muted font-medium">{d}</div>
         ))}
       </div>
-      <div className="grid grid-cols-7">
+      <div className="hidden md:grid md:grid-cols-7">
         {cells.map((day, i) => (
           <div
             key={i}

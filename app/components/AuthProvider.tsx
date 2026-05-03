@@ -4,8 +4,10 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useState,
 } from "react";
+import { useRouter } from "next/navigation";
 
 import {
   loginWithGoogleToken,
@@ -13,6 +15,20 @@ import {
   type AuthUser,
 } from "../lib/auth";
 import { useLocale } from "./LocaleProvider";
+
+function isTokenExpired(token: string): boolean {
+  try {
+    const part = token.split(".")[1];
+    if (!part) return true;
+    const payload = JSON.parse(
+      atob(part.replace(/-/g, "+").replace(/_/g, "/")),
+    ) as { exp?: number };
+    if (typeof payload.exp !== "number") return false;
+    return payload.exp * 1000 < Date.now();
+  } catch {
+    return true;
+  }
+}
 
 interface AuthContextType {
   user: AuthUser | null;
@@ -45,6 +61,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }): React
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { locale, t } = useLocale();
+  const router = useRouter();
 
   function persistUser(authUser: AuthUser): void {
     setUser(authUser);
@@ -86,14 +103,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }): React
     }
   }, [locale, t]);
 
-  const logout = useCallback(() => {
+  function clearAuth(): void {
     setUser(null);
     setError(null);
     localStorage.removeItem(STORAGE_KEY);
     localStorage.removeItem("token");
-    // Clear cookie
     document.cookie = "token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
-  }, []);
+  }
+
+  const logout = useCallback(() => {
+    clearAuth();
+    router.push("/login");
+  }, [router]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Redirect to login if the stored token is already expired on mount
+  useEffect(() => {
+    const stored = getStoredAuthUser();
+    if (stored && isTokenExpired(stored.token)) {
+      clearAuth();
+      router.push("/login");
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <AuthContext.Provider value={{ user, isLoading, error, login, loginEmail, logout }}>
