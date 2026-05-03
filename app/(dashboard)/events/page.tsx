@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import type { PaginatedEvents, EventCategory, EventStatus, Location } from "../../../lib/types";
+import { getServerLocale } from "@/lib/i18n/server";
+import { getDictionary, translate } from "@/lib/i18n/shared";
 import { EventsClient } from "./EventsClient";
 
 export const metadata: Metadata = {
@@ -27,6 +29,8 @@ async function fetchJson<T>(path: string): Promise<T | null> {
 }
 
 export default async function EventsPage(): Promise<React.JSX.Element> {
+  const locale = await getServerLocale();
+  const dictionary = getDictionary(locale);
   const [eventsData, categories, statuses, locations, participationTypes] = await Promise.all([
     fetchJson<PaginatedEvents>("/events?limit=20"),
     fetchJson<EventCategory[]>("/lookups/event-categories"),
@@ -41,10 +45,10 @@ export default async function EventsPage(): Promise<React.JSX.Element> {
     <main className="mx-auto w-full max-w-7xl px-6 py-10 md:px-10">
       <header className="mb-8">
         <h1 className="text-3xl font-bold tracking-tight text-text">
-          Events
+          {translate(dictionary, "events_page.title")}
         </h1>
         <p className="mt-1 text-sm text-muted">
-          Browse and discover university events
+          {translate(dictionary, "events_page.subtitle")}
         </p>
       </header>
 

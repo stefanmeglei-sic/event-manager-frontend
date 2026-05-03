@@ -4,6 +4,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import { useRouter, useParams } from "next/navigation";
 
 import { useAuth } from "@/app/components/AuthProvider";
+import { useLocale } from "@/app/components/LocaleProvider";
 import { apiFetch } from "@/lib/api/client";
 import {
   getEventCategories,
@@ -17,6 +18,7 @@ export default function EditEventPage(): React.JSX.Element {
   const router = useRouter();
   const params = useParams<{ id: string }>();
   const id = params.id;
+  const { t } = useLocale();
   const { user } = useAuth();
 
   const [categories, setCategories] = useState<EventCategory[]>([]);
@@ -79,9 +81,9 @@ export default function EditEventPage(): React.JSX.Element {
         setLoaded(true);
       })
       .catch((err: unknown) => {
-        setError(err instanceof Error ? err.message : "Failed to load event");
+        setError(err instanceof Error ? err.message : t("event_form.failed_to_load_event"));
       });
-  }, [id]);
+  }, [id, t]);
 
   async function onSubmit(e: FormEvent<HTMLFormElement>): Promise<void> {
     e.preventDefault();
@@ -107,7 +109,7 @@ export default function EditEventPage(): React.JSX.Element {
       });
       router.push(`/events/${id}`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to update event");
+      setError(err instanceof Error ? err.message : t("event_form.failed_to_update"));
     } finally {
       setIsSaving(false);
     }
@@ -116,7 +118,7 @@ export default function EditEventPage(): React.JSX.Element {
   if (!user) {
     return (
       <main className="mx-auto w-full max-w-3xl px-6 py-10 md:px-10">
-        <p className="text-muted">Loading user...</p>
+        <p className="text-muted">{t("common.loading_user")}</p>
       </main>
     );
   }
@@ -124,9 +126,9 @@ export default function EditEventPage(): React.JSX.Element {
   if (!canEdit) {
     return (
       <main className="mx-auto w-full max-w-3xl px-6 py-10 md:px-10">
-        <h1 className="text-2xl font-semibold text-text">Edit Event</h1>
+        <h1 className="text-2xl font-semibold text-text">{t("event_form.edit_title")}</h1>
         <p className="mt-3 rounded-xl border border-danger/30 bg-danger-bg p-4 text-danger">
-          You do not have permission to edit events.
+          {t("event_form.edit_restricted")}
         </p>
       </main>
     );
@@ -135,18 +137,18 @@ export default function EditEventPage(): React.JSX.Element {
   if (!loaded && !error) {
     return (
       <main className="mx-auto w-full max-w-3xl px-6 py-10 md:px-10">
-        <p className="text-muted">Loading event...</p>
+        <p className="text-muted">{t("common.loading")}</p>
       </main>
     );
   }
 
   return (
     <main className="mx-auto w-full max-w-3xl px-6 py-10 md:px-10">
-      <h1 className="text-3xl font-bold tracking-tight text-text">Edit Event</h1>
+      <h1 className="text-3xl font-bold tracking-tight text-text">{t("event_form.edit_title")}</h1>
 
       <form onSubmit={onSubmit} className="mt-8 space-y-4 rounded-2xl border border-border bg-surface p-6">
         <div>
-          <label className="block text-sm text-text">Title</label>
+          <label className="block text-sm text-text">{t("event_form.title_label")}</label>
           <input
             required
             value={title}
@@ -156,7 +158,7 @@ export default function EditEventPage(): React.JSX.Element {
         </div>
 
         <div>
-          <label className="block text-sm text-text">Description</label>
+          <label className="block text-sm text-text">{t("event_form.description_label")}</label>
           <textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
@@ -167,7 +169,7 @@ export default function EditEventPage(): React.JSX.Element {
 
         <div className="grid gap-4 md:grid-cols-2">
           <div>
-            <label className="block text-sm text-text">Start date</label>
+            <label className="block text-sm text-text">{t("event_form.start_date")}</label>
             <input
               required
               type="datetime-local"
@@ -177,7 +179,7 @@ export default function EditEventPage(): React.JSX.Element {
             />
           </div>
           <div>
-            <label className="block text-sm text-text">End date</label>
+            <label className="block text-sm text-text">{t("event_form.end_date")}</label>
             <input
               required
               type="datetime-local"
@@ -190,7 +192,7 @@ export default function EditEventPage(): React.JSX.Element {
 
         <div className="grid gap-4 md:grid-cols-2">
           <div>
-            <label className="block text-sm text-text">Category</label>
+            <label className="block text-sm text-text">{t("event_form.category")}</label>
             <select
               value={categoryId}
               onChange={(e) => setCategoryId(e.target.value)}
@@ -202,7 +204,7 @@ export default function EditEventPage(): React.JSX.Element {
             </select>
           </div>
           <div>
-            <label className="block text-sm text-text">Status</label>
+            <label className="block text-sm text-text">{t("event_form.status")}</label>
             <select
               value={statusId}
               onChange={(e) => setStatusId(e.target.value)}
@@ -217,20 +219,20 @@ export default function EditEventPage(): React.JSX.Element {
 
         <div className="grid gap-4 md:grid-cols-2">
           <div>
-            <label className="block text-sm text-text">Location</label>
+            <label className="block text-sm text-text">{t("event_form.location")}</label>
             <select
               value={locationId}
               onChange={(e) => setLocationId(e.target.value)}
               className="mt-1 w-full rounded-xl border border-border bg-surface-raised px-3 py-2 text-text"
             >
-              <option value="">No location</option>
+              <option value="">{t("common.no_location")}</option>
               {locations.map((loc) => (
                 <option key={loc.id} value={loc.id}>{loc.nume_sala}</option>
               ))}
             </select>
           </div>
           <div>
-            <label className="block text-sm text-text">Participation type</label>
+            <label className="block text-sm text-text">{t("event_form.participation_type")}</label>
             <select
               value={participationTypeId}
               onChange={(e) => setParticipationTypeId(e.target.value)}
@@ -245,7 +247,7 @@ export default function EditEventPage(): React.JSX.Element {
 
         <div className="grid gap-4 md:grid-cols-3">
           <div>
-            <label className="block text-sm text-text">Max participants</label>
+            <label className="block text-sm text-text">{t("event_form.max_participants")}</label>
             <input
               type="number"
               min={1}
@@ -255,7 +257,7 @@ export default function EditEventPage(): React.JSX.Element {
             />
           </div>
           <div className="md:col-span-2">
-            <label className="block text-sm text-text">Registration deadline</label>
+            <label className="block text-sm text-text">{t("event_form.registration_deadline")}</label>
             <input
               type="datetime-local"
               value={deadline}
@@ -266,7 +268,7 @@ export default function EditEventPage(): React.JSX.Element {
         </div>
 
         <div>
-          <label className="block text-sm text-text">Registration link</label>
+          <label className="block text-sm text-text">{t("event_form.registration_link")}</label>
           <input
             value={registrationLink}
             onChange={(e) => setRegistrationLink(e.target.value)}
@@ -286,14 +288,14 @@ export default function EditEventPage(): React.JSX.Element {
             disabled={isSaving}
             className="rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-on-primary hover:opacity-90 disabled:opacity-50"
           >
-            {isSaving ? "Saving..." : "Save changes"}
+            {isSaving ? t("event_form.saving_button") : t("event_form.save_button")}
           </button>
           <button
             type="button"
             onClick={() => router.push(`/events/${id}`)}
             className="rounded-xl border border-border px-5 py-2.5 text-sm font-semibold text-text hover:bg-surface-muted"
           >
-            Cancel
+            {t("common.cancel")}
           </button>
         </div>
       </form>

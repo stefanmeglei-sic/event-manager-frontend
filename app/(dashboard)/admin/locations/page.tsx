@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useState, type FormEvent } from "react";
 
 import { useAuth } from "../../../components/AuthProvider";
+import { useLocale } from "../../../components/LocaleProvider";
 import {
   createLocation,
   deleteLocation,
@@ -12,6 +13,7 @@ import {
 import type { Location } from "../../../../lib/types";
 
 export default function AdminLocationsPage(): React.JSX.Element {
+  const { t } = useLocale();
   const { user } = useAuth();
   const isAdmin = user?.role === "admin";
 
@@ -21,20 +23,35 @@ export default function AdminLocationsPage(): React.JSX.Element {
   const [capacity, setCapacity] = useState("");
   const [error, setError] = useState<string | null>(null);
 
-  async function loadLocations(): Promise<void> {
+  const loadLocations = useCallback(async (): Promise<void> => {
     try {
       const data = await listLocations();
       setLocations(data);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load locations");
+      setError(err instanceof Error ? err.message : t("admin_locations.failed_to_load"));
     }
-  }
+  }, [t]);
 
   useEffect(() => {
-    if (isAdmin) {
-      loadLocations().catch(() => undefined);
+    if (!isAdmin) {
+      return;
     }
-  }, [isAdmin]);
+
+    let active = true;
+    listLocations()
+      .then((data) => {
+        if (!active) return;
+        setLocations(data);
+      })
+      .catch((err: unknown) => {
+        if (!active) return;
+        setError(err instanceof Error ? err.message : t("admin_locations.failed_to_load"));
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [isAdmin, t]);
 
   async function onCreate(e: FormEvent<HTMLFormElement>): Promise<void> {
     e.preventDefault();
@@ -50,7 +67,7 @@ export default function AdminLocationsPage(): React.JSX.Element {
       setCapacity("");
       await loadLocations();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to create location");
+      setError(err instanceof Error ? err.message : t("admin_locations.failed_to_create"));
     }
   }
 
@@ -60,7 +77,7 @@ export default function AdminLocationsPage(): React.JSX.Element {
       await deleteLocation(id);
       await loadLocations();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to delete location");
+      setError(err instanceof Error ? err.message : t("admin_locations.failed_to_delete"));
     }
   }
 
@@ -70,14 +87,14 @@ export default function AdminLocationsPage(): React.JSX.Element {
       await updateLocation(id, { capacitate: nextCapacity });
       await loadLocations();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to update location");
+      setError(err instanceof Error ? err.message : t("admin_locations.failed_to_update"));
     }
   }
 
   if (!user) {
     return (
       <main className="mx-auto w-full max-w-5xl px-6 py-10 md:px-10">
-        <p className="text-muted">Loading user...</p>
+        <p className="text-muted">{t("common.loading_user")}</p>
       </main>
     );
   }
@@ -85,9 +102,9 @@ export default function AdminLocationsPage(): React.JSX.Element {
   if (!isAdmin) {
     return (
       <main className="mx-auto w-full max-w-5xl px-6 py-10 md:px-10">
-        <h1 className="text-3xl font-bold tracking-tight text-text">Locations</h1>
+        <h1 className="text-3xl font-bold tracking-tight text-text">{t("admin_locations.restricted_title")}</h1>
         <p className="mt-3 rounded-xl border border-danger/30 bg-danger-bg p-4 text-danger">
-          Only admin users can manage locations.
+          {t("admin_locations.restricted_message")}
         </p>
       </main>
     );
@@ -95,21 +112,21 @@ export default function AdminLocationsPage(): React.JSX.Element {
 
   return (
     <main className="mx-auto w-full max-w-5xl px-6 py-10 md:px-10">
-      <h1 className="text-3xl font-bold tracking-tight text-text">Manage Locations</h1>
-      <p className="mt-1 text-sm text-muted">Admin CRUD for event locations.</p>
+      <h1 className="text-3xl font-bold tracking-tight text-text">{t("admin_locations.title")}</h1>
+      <p className="mt-1 text-sm text-muted">{t("admin_locations.subtitle")}</p>
 
       <form onSubmit={onCreate} className="mt-6 grid gap-3 rounded-2xl border border-border bg-surface p-4 md:grid-cols-4">
         <input
           required
           value={name}
           onChange={(e) => setName(e.target.value)}
-          placeholder="Room name"
+          placeholder={t("admin_locations.room_name")}
           className="rounded-xl border border-border bg-surface-raised px-3 py-2 text-text"
         />
         <input
           value={building}
           onChange={(e) => setBuilding(e.target.value)}
-          placeholder="Building"
+          placeholder={t("admin_locations.building")}
           className="rounded-xl border border-border bg-surface-raised px-3 py-2 text-text"
         />
         <input
@@ -117,11 +134,11 @@ export default function AdminLocationsPage(): React.JSX.Element {
           min={1}
           value={capacity}
           onChange={(e) => setCapacity(e.target.value)}
-          placeholder="Capacity"
+          placeholder={t("admin_locations.capacity")}
           className="rounded-xl border border-border bg-surface-raised px-3 py-2 text-text"
         />
         <button className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-on-primary hover:bg-primary-hover">
-          Add location
+          {t("admin_locations.add_location")}
         </button>
       </form>
 
@@ -131,10 +148,10 @@ export default function AdminLocationsPage(): React.JSX.Element {
         <table className="min-w-full divide-y divide-border">
           <thead>
             <tr className="text-left text-xs uppercase tracking-wide text-subtle">
-              <th className="px-4 py-3">Room</th>
-              <th className="px-4 py-3">Building</th>
-              <th className="px-4 py-3">Capacity</th>
-              <th className="px-4 py-3">Actions</th>
+              <th className="px-4 py-3">{t("admin_locations.room")}</th>
+              <th className="px-4 py-3">{t("admin_locations.building")}</th>
+              <th className="px-4 py-3">{t("admin_locations.capacity")}</th>
+              <th className="px-4 py-3">{t("admin_locations.actions")}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
@@ -149,13 +166,13 @@ export default function AdminLocationsPage(): React.JSX.Element {
                       onClick={() => onUpdateCapacity(loc.id, (loc.capacitate ?? 0) + 10)}
                       className="rounded-lg border border-border px-2 py-1 text-xs text-text hover:bg-surface-muted"
                     >
-                      +10 cap
+                      {t("admin_locations.increase_capacity")}
                     </button>
                     <button
                       onClick={() => onDelete(loc.id)}
                       className="rounded-lg border border-danger/40 px-2 py-1 text-xs text-danger hover:bg-danger-bg"
                     >
-                      Delete
+                      {t("common.delete")}
                     </button>
                   </div>
                 </td>

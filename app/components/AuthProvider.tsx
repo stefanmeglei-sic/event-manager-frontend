@@ -4,7 +4,6 @@ import {
   createContext,
   useCallback,
   useContext,
-  useEffect,
   useState,
 } from "react";
 
@@ -13,6 +12,7 @@ import {
   loginWithEmailPassword,
   type AuthUser,
 } from "../lib/auth";
+import { useLocale } from "./LocaleProvider";
 
 interface AuthContextType {
   user: AuthUser | null;
@@ -27,22 +27,24 @@ const AuthContext = createContext<AuthContextType | null>(null);
 
 const STORAGE_KEY = "event_manager_auth";
 
+function getStoredAuthUser(): AuthUser | null {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    return stored ? (JSON.parse(stored) as AuthUser) : null;
+  } catch {
+    return null;
+  }
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }): React.JSX.Element {
-  const [user, setUser] = useState<AuthUser | null>(null);
+  const [user, setUser] = useState<AuthUser | null>(() => getStoredAuthUser());
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  // Restore session from localStorage on mount
-  useEffect(() => {
-    try {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored) {
-        setUser(JSON.parse(stored) as AuthUser);
-      }
-    } catch {
-      // Ignore corrupt storage
-    }
-  }, []);
+  const { locale, t } = useLocale();
 
   function persistUser(authUser: AuthUser): void {
     setUser(authUser);
@@ -56,33 +58,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }): React
     setIsLoading(true);
     setError(null);
     try {
-      const authUser = await loginWithGoogleToken(idToken);
+      const authUser = await loginWithGoogleToken(idToken, locale);
       persistUser(authUser);
       return authUser;
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Sign-in failed";
+      const message = err instanceof Error ? err.message : t("errors.auth.sign_in_failed");
       setError(message);
       throw new Error(message);
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [locale, t]);
 
   const loginEmail = useCallback(async (email: string, password: string) => {
     setIsLoading(true);
     setError(null);
     try {
-      const authUser = await loginWithEmailPassword(email, password);
+      const authUser = await loginWithEmailPassword(email, password, locale);
       persistUser(authUser);
       return authUser;
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Sign-in failed";
+      const message = err instanceof Error ? err.message : t("errors.auth.sign_in_failed");
       setError(message);
       throw new Error(message);
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [locale, t]);
 
   const logout = useCallback(() => {
     setUser(null);

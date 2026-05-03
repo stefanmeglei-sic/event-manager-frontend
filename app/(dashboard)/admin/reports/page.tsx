@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { apiFetch } from "@/lib/api/client";
+import { useLocale } from "@/app/components/LocaleProvider";
 
 type Summary = {
   total_events: number;
@@ -12,6 +13,7 @@ type Summary = {
 type MonthCount = { month: string; count: number };
 
 export default function AdminReportsPage() {
+  const { t } = useLocale();
   const [summary, setSummary] = useState<Summary | null>(null);
   const [byMonth, setByMonth] = useState<MonthCount[]>([]);
   const [loading, setLoading] = useState(true);
@@ -28,29 +30,29 @@ export default function AdminReportsPage() {
         setSummary(s);
         setByMonth(m);
       })
-      .catch((e) => setError(e instanceof Error ? e.message : "Failed to load"))
+      .catch((e) => setError(e instanceof Error ? e.message : t("reports.failed_to_load")))
       .finally(() => setLoading(false));
-  }, []);
+  }, [t]);
 
-  if (loading) return <p className="text-muted p-8">Loading reports…</p>;
+  if (loading) return <p className="text-muted p-8">{t("reports.loading")}</p>;
   if (error) return <p className="text-danger p-8">{error}</p>;
 
   const maxCount = Math.max(...byMonth.map((m) => m.count), 1);
 
   return (
     <main className="mx-auto max-w-4xl px-4 py-10 space-y-8">
-      <h1 className="text-2xl font-bold text-text">Reports</h1>
+      <h1 className="text-2xl font-bold text-text">{t("reports.title")}</h1>
 
       {/* Summary cards */}
       <div className="grid grid-cols-3 gap-4">
-        <StatCard label="Total Events" value={summary?.total_events ?? 0} />
-        <StatCard label="Total Registrations" value={summary?.total_registrations ?? 0} />
-        <StatCard label="Avg Participants/Event" value={summary?.avg_participants_per_event ?? 0} />
+        <StatCard label={t("reports.total_events")} value={summary?.total_events ?? 0} />
+        <StatCard label={t("reports.total_registrations")} value={summary?.total_registrations ?? 0} />
+        <StatCard label={t("reports.avg_per_event")} value={summary?.avg_participants_per_event ?? 0} />
       </div>
 
       {/* Events by month bar chart (CSS bars) */}
       <div className="rounded-xl border border-border bg-surface p-6">
-        <h2 className="text-sm font-semibold text-text mb-4">Events by Month</h2>
+        <h2 className="text-sm font-semibold text-text mb-4">{t("reports.events_by_month")}</h2>
         <div className="space-y-2">
           {byMonth.map((m) => (
             <div key={m.month} className="flex items-center gap-3">
@@ -64,21 +66,21 @@ export default function AdminReportsPage() {
               <span className="w-6 text-xs text-muted text-right">{m.count}</span>
             </div>
           ))}
-          {byMonth.length === 0 && <p className="text-muted text-sm">No data yet.</p>}
+          {byMonth.length === 0 && <p className="text-muted text-sm">{t("reports.no_data")}</p>}
         </div>
       </div>
 
       {/* Top organizers */}
       {summary && summary.top_organizers.length > 0 && (
         <div className="rounded-xl border border-border bg-surface p-6">
-          <h2 className="text-sm font-semibold text-text mb-4">Top Organizers</h2>
+          <h2 className="text-sm font-semibold text-text mb-4">{t("reports.top_organizers")}</h2>
           <div className="space-y-2">
             {summary.top_organizers.map((o, i) => (
               <div key={o.organizer_id} className="flex items-center justify-between text-sm">
                 <span className="text-muted font-mono text-xs truncate max-w-[70%]">
                   {i + 1}. {o.organizer_id}
                 </span>
-                <span className="text-text font-medium">{o.event_count} events</span>
+                <span className="text-text font-medium">{o.event_count} {t("reports.events_suffix")}</span>
               </div>
             ))}
           </div>

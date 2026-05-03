@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useLocale } from "@/app/components/LocaleProvider";
 
 type FeedbackItem = {
   id: string;
@@ -20,8 +21,14 @@ type Props = {
 };
 
 export default function FeedbackSection({ eventId, eventEndDate }: Props) {
-  const [token, setToken] = useState<string | null>(null);
-  const [hasEnded, setHasEnded] = useState(false);
+  const { locale, t } = useLocale();
+  const [token] = useState<string | null>(() => {
+    if (typeof window === "undefined") {
+      return null;
+    }
+    return localStorage.getItem("token");
+  });
+  const hasEnded = new Date() > new Date(eventEndDate);
   const [feedback, setFeedback] = useState<FeedbackResponse | null>(null);
   const [rating, setRating] = useState(0);
   const [hovered, setHovered] = useState(0);
@@ -30,12 +37,6 @@ export default function FeedbackSection({ eventId, eventEndDate }: Props) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [fetchError, setFetchError] = useState(false);
-
-  useEffect(() => {
-    const storedToken = localStorage.getItem("token");
-    setToken(storedToken);
-    setHasEnded(new Date() > new Date(eventEndDate));
-  }, [eventEndDate]);
 
   useEffect(() => {
     const baseUrl =
@@ -65,6 +66,7 @@ export default function FeedbackSection({ eventId, eventEndDate }: Props) {
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
+          "X-Locale": locale,
         },
         body: JSON.stringify({ rating, comentariu: comment || null }),
       });
@@ -74,7 +76,7 @@ export default function FeedbackSection({ eventId, eventEndDate }: Props) {
       }
       setSubmitted(true);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to submit feedback.");
+      setError(err instanceof Error ? err.message : t("feedback.failed_to_submit"));
     } finally {
       setLoading(false);
     }
@@ -86,12 +88,12 @@ export default function FeedbackSection({ eventId, eventEndDate }: Props) {
   return (
     <div className="border-t border-border pt-6 space-y-4">
       <h2 className="text-sm font-semibold text-muted uppercase tracking-wider">
-        Feedback
+        {t("feedback.title")}
       </h2>
 
       {feedback && feedback.average_rating !== null && (
         <p className="text-sm text-text">
-          Average rating:{" "}
+          {t("feedback.average_rating")} {" "}
           <span className="font-semibold">
             {"★".repeat(Math.round(feedback.average_rating))}
             {"☆".repeat(5 - Math.round(feedback.average_rating))}
@@ -102,7 +104,7 @@ export default function FeedbackSection({ eventId, eventEndDate }: Props) {
 
       {!submitted ? (
         <form onSubmit={handleSubmit} className="space-y-3">
-          <p className="text-xs text-muted uppercase tracking-wider">Your rating</p>
+          <p className="text-xs text-muted uppercase tracking-wider">{t("feedback.your_rating")}</p>
           <div className="flex gap-1">
             {[1, 2, 3, 4, 5].map((star) => (
               <button
@@ -112,7 +114,7 @@ export default function FeedbackSection({ eventId, eventEndDate }: Props) {
                 onMouseLeave={() => setHovered(0)}
                 onClick={() => setRating(star)}
                 className="text-2xl transition-colors"
-                aria-label={`Rate ${star} star${star > 1 ? "s" : ""}`}
+                aria-label={t("feedback.rate_star", { count: star, suffix: star > 1 ? "s" : "" })}
               >
                 {star <= (hovered || rating) ? "★" : "☆"}
               </button>
@@ -121,7 +123,7 @@ export default function FeedbackSection({ eventId, eventEndDate }: Props) {
           <textarea
             value={comment}
             onChange={(e) => setComment(e.target.value)}
-            placeholder="Leave a comment (optional)"
+            placeholder={t("feedback.comment_placeholder")}
             rows={3}
             className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text placeholder-muted focus:outline-none focus:ring-1 focus:ring-primary resize-none"
           />
@@ -131,25 +133,25 @@ export default function FeedbackSection({ eventId, eventEndDate }: Props) {
             disabled={loading || rating === 0}
             className="rounded-xl bg-primary px-5 py-2 text-sm font-semibold text-on-primary hover:opacity-90 disabled:opacity-50"
           >
-            {loading ? "Submitting…" : "Submit feedback"}
+            {loading ? t("feedback.submitting") : t("feedback.submit")}
           </button>
         </form>
       ) : (
         <p className="rounded-xl border border-success/30 bg-success-bg px-4 py-3 text-sm text-success">
-          Thank you for your feedback!
+          {t("feedback.thank_you")}
         </p>
       )}
 
       {feedback && feedback.items.length > 0 && (
         <div className="space-y-3 pt-2">
-          <p className="text-xs text-muted uppercase tracking-wider">Reviews</p>
+          <p className="text-xs text-muted uppercase tracking-wider">{t("feedback.reviews")}</p>
           {feedback.items.map((item) => (
             <div key={item.id} className="rounded-xl border border-border bg-surface p-4 space-y-1">
               <div className="flex items-center justify-between">
                 <span className="text-sm text-text">
                   {"★".repeat(item.rating)}{"☆".repeat(5 - item.rating)}
                 </span>
-                <span className="text-xs text-muted">Anonymous</span>
+                <span className="text-xs text-muted">{t("feedback.anonymous")}</span>
               </div>
               {item.comentariu && (
                 <p className="text-sm text-text">{item.comentariu}</p>

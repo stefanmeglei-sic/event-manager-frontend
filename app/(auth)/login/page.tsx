@@ -4,6 +4,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "../../components/AuthProvider";
 import { GoogleLogin } from "@react-oauth/google";
+import { useLocale } from "../../components/LocaleProvider";
 
 function getLandingPath(role: string): string {
   if (role === "admin") return "/admin/reports";
@@ -13,6 +14,7 @@ function getLandingPath(role: string): string {
 
 export default function LoginPage(): React.JSX.Element {
   const { user, loginEmail, login, isLoading, error } = useAuth();
+  const { t } = useLocale();
   const router = useRouter();
 
   const [email, setEmail] = useState("");
@@ -34,7 +36,7 @@ export default function LoginPage(): React.JSX.Element {
       router.replace(target);
       router.refresh();
     } catch (err) {
-      setLocalError(err instanceof Error ? err.message : "Login failed");
+      setLocalError(err instanceof Error ? err.message : t("auth.login_failed"));
     }
   }
 
@@ -46,7 +48,7 @@ export default function LoginPage(): React.JSX.Element {
       router.replace(target);
       router.refresh();
     } catch (err) {
-      setLocalError(err instanceof Error ? err.message : "Google sign-in failed");
+      setLocalError(err instanceof Error ? err.message : t("auth.google_login_failed"));
     }
   }
 
@@ -58,10 +60,10 @@ export default function LoginPage(): React.JSX.Element {
         <div className="rounded-3xl border border-border bg-surface p-8 shadow-xl">
           <div className="mb-8 text-center">
             <h1 className="text-2xl font-bold tracking-tight text-text">
-              Event Manager
+              {t("app.name")}
             </h1>
             <p className="mt-1 text-sm text-muted">
-              University Event Management System
+              {t("app.tagline")}
             </p>
           </div>
 
@@ -71,7 +73,7 @@ export default function LoginPage(): React.JSX.Element {
                 htmlFor="email"
                 className="block text-sm font-medium text-text"
               >
-                Email
+                {t("auth.email")}
               </label>
               <input
                 id="email"
@@ -90,7 +92,7 @@ export default function LoginPage(): React.JSX.Element {
                 htmlFor="password"
                 className="block text-sm font-medium text-text"
               >
-                Password
+                {t("auth.password")}
               </label>
               <input
                 id="password"
@@ -115,13 +117,13 @@ export default function LoginPage(): React.JSX.Element {
               disabled={isLoading}
               className="w-full rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-on-primary shadow-sm transition hover:bg-primary-hover disabled:opacity-50"
             >
-              {isLoading ? "Signing in…" : "Sign in"}
+              {isLoading ? t("auth.signing_in") : t("auth.sign_in")}
             </button>
           </form>
 
           <div className="my-6 flex items-center gap-3">
             <div className="h-px flex-1 bg-border" />
-            <span className="text-xs text-subtle">or</span>
+            <span className="text-xs text-subtle">{t("common.or")}</span>
             <div className="h-px flex-1 bg-border" />
           </div>
 
@@ -133,7 +135,7 @@ export default function LoginPage(): React.JSX.Element {
                 }
               }}
               onError={() =>
-                setLocalError("Google sign-in failed. Please try again.")
+                setLocalError(t("auth.google_sign_in_failed"))
               }
               size="large"
               shape="rectangular"

@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { apiFetch } from "@/lib/api/client";
+import { getDictionary, translate } from "@/lib/i18n/shared";
+import { getServerLocale } from "@/lib/i18n/server";
 import type { Event, Location, EventCategory, EventStatus } from "@/lib/types";
 import EnrollButton from "./EnrollButton";
 import ValidateButtons from "./ValidateButtons";
@@ -27,6 +29,9 @@ function buildGoogleCalendarUrl(event: Event, locationName: string | undefined):
 }
 
 export default async function EventDetailPage({ params }: Props) {
+  const locale = await getServerLocale();
+  const dictionary = getDictionary(locale);
+  const dateLocale = locale === "ro" ? "ro-RO" : "en-US";
   const { id } = await params;
 
   const [event, locations, categories, statuses] = await Promise.all([
@@ -47,7 +52,7 @@ export default async function EventDetailPage({ params }: Props) {
           href="/events"
           className="text-sm text-muted hover:text-text transition-colors"
         >
-          ← Back to events
+          &larr; {translate(dictionary, "event_detail.back_to_events")}
         </Link>
       </div>
 
@@ -63,40 +68,40 @@ export default async function EventDetailPage({ params }: Props) {
 
         {event.descriere && (
           <div>
-            <p className="text-xs text-muted uppercase tracking-wider mb-1">Description</p>
+            <p className="text-xs text-muted uppercase tracking-wider mb-1">{translate(dictionary, "event_detail.description")}</p>
             <p className="text-text whitespace-pre-wrap">{event.descriere}</p>
           </div>
         )}
 
         <div className="grid gap-4 md:grid-cols-2">
           <div>
-            <p className="text-xs text-muted uppercase tracking-wider mb-1">Start</p>
+            <p className="text-xs text-muted uppercase tracking-wider mb-1">{translate(dictionary, "event_detail.start")}</p>
             <p className="text-text">
-              {new Date(event.start_date).toLocaleString("ro-RO")}
+              {new Date(event.start_date).toLocaleString(dateLocale)}
             </p>
           </div>
           <div>
-            <p className="text-xs text-muted uppercase tracking-wider mb-1">End</p>
+            <p className="text-xs text-muted uppercase tracking-wider mb-1">{translate(dictionary, "event_detail.end")}</p>
             <p className="text-text">
-              {new Date(event.end_date).toLocaleString("ro-RO")}
+              {new Date(event.end_date).toLocaleString(dateLocale)}
             </p>
           </div>
         </div>
 
         {location && (
           <div>
-            <p className="text-xs text-muted uppercase tracking-wider mb-1">Location</p>
+            <p className="text-xs text-muted uppercase tracking-wider mb-1">{translate(dictionary, "event_detail.location")}</p>
             <p className="text-text">
               {location.nume_sala}
-              {location.corp_cladire ? ` — ${location.corp_cladire}` : ""}
-              {location.capacitate ? ` (capacity: ${location.capacitate})` : ""}
+              {location.corp_cladire ? ` - ${location.corp_cladire}` : ""}
+              {location.capacitate ? ` (${translate(dictionary, "event_detail.capacity")}: ${location.capacitate})` : ""}
             </p>
           </div>
         )}
 
         {event.max_participanti !== null && (
           <div>
-            <p className="text-xs text-muted uppercase tracking-wider mb-1">Max participants</p>
+            <p className="text-xs text-muted uppercase tracking-wider mb-1">{translate(dictionary, "event_detail.max_participants")}</p>
             <p className="text-text">{event.max_participanti}</p>
           </div>
         )}
@@ -104,10 +109,10 @@ export default async function EventDetailPage({ params }: Props) {
         {event.deadline_inscriere && (
           <div>
             <p className="text-xs text-muted uppercase tracking-wider mb-1">
-              Registration deadline
+              {translate(dictionary, "event_detail.registration_deadline")}
             </p>
             <p className="text-text">
-              {new Date(event.deadline_inscriere).toLocaleString("ro-RO")}
+              {new Date(event.deadline_inscriere).toLocaleString(dateLocale)}
             </p>
           </div>
         )}
@@ -115,7 +120,7 @@ export default async function EventDetailPage({ params }: Props) {
         {event.link_inscriere && (
           <div>
             <p className="text-xs text-muted uppercase tracking-wider mb-1">
-              Registration link
+              {translate(dictionary, "event_detail.registration_link")}
             </p>
             <a
               href={event.link_inscriere}
@@ -129,11 +134,11 @@ export default async function EventDetailPage({ params }: Props) {
         )}
 
         <div>
-          <p className="text-xs text-muted uppercase tracking-wider mb-2">QR Code</p>
+          <p className="text-xs text-muted uppercase tracking-wider mb-2">{translate(dictionary, "event_detail.qr_code")}</p>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={`${process.env.NEXT_PUBLIC_BROWSER_API_URL ?? "http://localhost:8000/api/v1"}/events/${id}/qr`}
-            alt="Event QR Code"
+            alt={translate(dictionary, "qr.event_alt")}
             width={160}
             height={160}
             className="rounded-lg border border-border"
@@ -150,7 +155,7 @@ export default async function EventDetailPage({ params }: Props) {
             href={`/events/${id}/edit`}
             className="mt-8 inline-block rounded-xl border border-border px-5 py-2.5 text-sm font-semibold text-text hover:bg-surface-muted"
           >
-            Edit event
+            {translate(dictionary, "event_detail.edit_event")}
           </Link>
         </div>
 
@@ -165,7 +170,7 @@ export default async function EventDetailPage({ params }: Props) {
             download
             className="rounded-xl border border-border px-4 py-2 text-sm font-semibold text-text hover:bg-surface-muted transition"
           >
-            📥 Add to Calendar
+            {translate(dictionary, "event_detail.add_to_calendar")}
           </a>
           <a
             href={buildGoogleCalendarUrl(event, location?.nume_sala)}
@@ -173,7 +178,7 @@ export default async function EventDetailPage({ params }: Props) {
             rel="noopener noreferrer"
             className="rounded-xl border border-border px-4 py-2 text-sm font-semibold text-text hover:bg-surface-muted transition"
           >
-            📅 Google Calendar
+            {translate(dictionary, "event_detail.google_calendar")}
           </a>
           {/* F11: CSV Export (client component checks role) */}
           <ExportCsvButton eventId={id} />

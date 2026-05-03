@@ -1,3 +1,5 @@
+import { getStoredLocale } from "@/lib/i18n/client";
+
 type ApiFetchOptions = Omit<RequestInit, 'headers'> & {
   token?: string;
   headers?: Record<string, string>;
@@ -30,6 +32,7 @@ export async function apiFetch<T>(
 
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
+    'X-Locale': getStoredLocale(),
     ...(options?.headers ?? {}),
   };
 
@@ -43,7 +46,9 @@ export async function apiFetch<T>(
     headers['Authorization'] = `Bearer ${token}`;
   }
 
-  const { token: _token, headers: _headers, ...restOptions } = options ?? {};
+  const { token: tokenOption, headers: headersOption, ...restOptions } = options ?? {};
+  void tokenOption;
+  void headersOption;
 
   const response = await fetch(url, {
     ...restOptions,

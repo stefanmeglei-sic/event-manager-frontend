@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { headers } from "next/headers";
+import { getDictionary, translate } from "@/lib/i18n/shared";
+import { getServerLocale } from "@/lib/i18n/server";
 
 export const metadata: Metadata = {
   title: "API Docs — Event Manager",
@@ -110,6 +112,8 @@ function buildEndpoints(spec: OpenApiSpec | null): EndpointItem[] {
 }
 
 export default async function ApiDocsPage(): Promise<React.JSX.Element> {
+  const locale = await getServerLocale();
+  const dictionary = getDictionary(locale);
   const spec = await getOpenApiSpec();
   const endpoints = buildEndpoints(spec);
   const backendBaseUrl = getBackendBaseUrl();
@@ -122,13 +126,13 @@ export default async function ApiDocsPage(): Promise<React.JSX.Element> {
           <div className="flex flex-wrap items-end justify-between gap-4">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-sky-700">
-                Swagger Frontend
+                {translate(dictionary, "api_docs.badge")}
               </p>
               <h1 className="mt-2 text-3xl font-bold tracking-tight md:text-4xl">
                 {spec?.info?.title ?? "Event Manager API"}
               </h1>
               <p className="mt-2 text-sm text-slate-600">
-                Version: {spec?.info?.version ?? "unknown"}
+                {translate(dictionary, "api_docs.version")} {spec?.info?.version ?? translate(dictionary, "common.unknown")}
               </p>
             </div>
             <div className="flex flex-col items-start gap-2 text-sm">
@@ -138,7 +142,7 @@ export default async function ApiDocsPage(): Promise<React.JSX.Element> {
                 rel="noreferrer"
                 className="rounded-full bg-slate-900 px-4 py-2 font-medium text-white transition hover:bg-slate-700"
               >
-                Open FastAPI Swagger
+                {translate(dictionary, "api_docs.open_swagger")}
               </a>
               <a
                 href={`${backendPublicBaseUrl}/openapi.json`}
@@ -146,7 +150,7 @@ export default async function ApiDocsPage(): Promise<React.JSX.Element> {
                 rel="noreferrer"
                 className="font-medium text-sky-700 underline decoration-sky-300 underline-offset-2"
               >
-                Open raw OpenAPI JSON
+                {translate(dictionary, "api_docs.open_raw_json")}
               </a>
             </div>
           </div>
@@ -160,12 +164,10 @@ export default async function ApiDocsPage(): Promise<React.JSX.Element> {
         {!spec ? (
           <section className="rounded-2xl border border-amber-200 bg-amber-50 p-5 text-amber-900">
             <h2 className="text-base font-semibold">
-              Backend OpenAPI unavailable
+              {translate(dictionary, "api_docs.backend_unavailable")}
             </h2>
             <p className="mt-2 text-sm">
-              Could not fetch{" "}
-              <strong>{`${backendBaseUrl}/openapi.json`}</strong>. Start the
-              backend container/server and refresh.
+              {translate(dictionary, "api_docs.backend_unavailable_body", { url: `${backendBaseUrl}/openapi.json` })}
             </p>
           </section>
         ) : null}
@@ -173,13 +175,13 @@ export default async function ApiDocsPage(): Promise<React.JSX.Element> {
         <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <div className="rounded-2xl border border-slate-200 bg-white/90 p-4">
             <p className="text-xs uppercase tracking-wide text-slate-500">
-              Endpoints
+              {translate(dictionary, "api_docs.endpoints")}
             </p>
             <p className="mt-1 text-2xl font-semibold">{endpoints.length}</p>
           </div>
           <div className="rounded-2xl border border-slate-200 bg-white/90 p-4">
             <p className="text-xs uppercase tracking-wide text-slate-500">
-              Tags
+              {translate(dictionary, "api_docs.tags")}
             </p>
             <p className="mt-1 text-2xl font-semibold">
               {new Set(endpoints.map((e) => e.tag)).size}
@@ -187,14 +189,14 @@ export default async function ApiDocsPage(): Promise<React.JSX.Element> {
           </div>
           <div className="rounded-2xl border border-slate-200 bg-white/90 p-4">
             <p className="text-xs uppercase tracking-wide text-slate-500">
-              Auth Domains
+              {translate(dictionary, "api_docs.auth_domains")}
             </p>
             <p className="mt-1 text-2xl font-semibold">1</p>
             <p className="text-xs text-slate-500">student.usv.ro</p>
           </div>
           <div className="rounded-2xl border border-slate-200 bg-white/90 p-4">
             <p className="text-xs uppercase tracking-wide text-slate-500">
-              Base URL
+              {translate(dictionary, "api_docs.base_url")}
             </p>
             <p className="mt-1 break-all text-sm font-semibold text-slate-700">
               {backendPublicBaseUrl}
@@ -203,7 +205,7 @@ export default async function ApiDocsPage(): Promise<React.JSX.Element> {
         </section>
 
         <section className="rounded-3xl border border-slate-200 bg-white/90 p-5 md:p-7">
-          <h2 className="text-xl font-semibold">Endpoint Catalog</h2>
+          <h2 className="text-xl font-semibold">{translate(dictionary, "api_docs.endpoint_catalog")}</h2>
           <div className="mt-5 grid gap-3">
             {endpoints.map((endpoint) => (
               <article
@@ -237,7 +239,7 @@ export default async function ApiDocsPage(): Promise<React.JSX.Element> {
             ))}
             {spec && endpoints.length === 0 ? (
               <p className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
-                OpenAPI loaded, but no paths were found.
+                {translate(dictionary, "api_docs.openapi_no_paths")}
               </p>
             ) : null}
           </div>

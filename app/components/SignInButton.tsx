@@ -3,11 +3,13 @@
 import { GoogleLogin } from "@react-oauth/google";
 import Link from "next/link";
 import { useAuth } from "./AuthProvider";
+import { useLocale } from "./LocaleProvider";
 
 const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ?? "";
 
 export function SignInButton() {
   const { user, isLoading, error, login, logout } = useAuth();
+  const { t } = useLocale();
 
   function getLandingPath(role: string): string {
     if (role === "admin") return "/admin/reports";
@@ -22,14 +24,14 @@ export function SignInButton() {
           href={getLandingPath(user.role)}
           className="rounded-full border border-border px-3 py-1.5 text-xs font-medium text-text transition hover:bg-surface-muted"
         >
-          Home
+          {t("nav.home")}
         </Link>
         {(user.role === "admin" || user.role === "organizer") && (
           <Link
             href="/events/new"
             className="rounded-full border border-border px-3 py-1.5 text-xs font-medium text-text transition hover:bg-surface-muted"
           >
-            New event
+            {t("nav.new_event")}
           </Link>
         )}
         {user.role === "admin" && (
@@ -37,7 +39,7 @@ export function SignInButton() {
             href="/admin/locations"
             className="rounded-full border border-border px-3 py-1.5 text-xs font-medium text-text transition hover:bg-surface-muted"
           >
-            Locations
+            {t("nav.locations")}
           </Link>
         )}
         {user.role === "admin" && (
@@ -45,7 +47,7 @@ export function SignInButton() {
             href="/admin/users"
             className="rounded-full border border-border px-3 py-1.5 text-xs font-medium text-text transition hover:bg-surface-muted"
           >
-            Users
+            {t("nav.users")}
           </Link>
         )}
         {user.role === "admin" && (
@@ -53,7 +55,7 @@ export function SignInButton() {
             href="/admin/reports"
             className="rounded-full border border-border px-3 py-1.5 text-xs font-medium text-text transition hover:bg-surface-muted"
           >
-            Reports
+            {t("nav.reports")}
           </Link>
         )}
         {user.role === "organizer" && (
@@ -61,14 +63,14 @@ export function SignInButton() {
             href="/organizer"
             className="rounded-full border border-border px-3 py-1.5 text-xs font-medium text-text transition hover:bg-surface-muted"
           >
-            My Events
+            {t("nav.my_events")}
           </Link>
         )}
         <Link
           href="/profile"
           className="rounded-full border border-border px-3 py-1.5 text-xs font-medium text-text transition hover:bg-surface-muted"
         >
-          Profile
+          {t("nav.profile")}
         </Link>
         <span className="max-w-[200px] truncate text-sm text-muted" title={user.email}>
           {user.email} ({user.role})
@@ -77,7 +79,7 @@ export function SignInButton() {
           onClick={logout}
           className="rounded-full border border-border px-3 py-1.5 text-xs font-medium text-text transition hover:bg-surface-muted"
         >
-          Sign out
+          {t("nav.sign_out")}
         </button>
       </div>
     );
@@ -86,7 +88,7 @@ export function SignInButton() {
   if (!GOOGLE_CLIENT_ID) {
     return (
       <p className="text-xs text-rose-600">
-        Google auth is not configured: missing NEXT_PUBLIC_GOOGLE_CLIENT_ID.
+        {t("auth.google_missing_client_id")}
       </p>
     );
   }
@@ -94,7 +96,7 @@ export function SignInButton() {
   return (
     <div className="flex flex-col items-end gap-1">
       {isLoading ? (
-        <span className="text-sm text-slate-500">Signing in…</span>
+        <span className="text-sm text-slate-500">{t("auth.signing_in")}</span>
       ) : (
         <GoogleLogin
           onSuccess={(cred) => {

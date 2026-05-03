@@ -2,19 +2,22 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { apiFetch } from "@/lib/api/client";
+import { useLocale } from "@/app/components/LocaleProvider";
 
 type ApiUser = { id: string; email: string; role_name: string; created_at: string };
 type PaginatedUsers = { items: ApiUser[]; next_cursor: string | null };
 
 export default function AdminUsersPage() {
+  const { t } = useLocale();
   const [users, setUsers] = useState<ApiUser[]>([]);
   const [cursor, setCursor] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [token, setToken] = useState<string | null | undefined>(undefined);
-
-  useEffect(() => {
-    setToken(localStorage.getItem("token"));
-  }, []);
+  const [token] = useState<string | null>(() => {
+    if (typeof window === "undefined") {
+      return null;
+    }
+    return localStorage.getItem("token");
+  });
+  const [loading, setLoading] = useState(Boolean(token));
 
   const loadMore = useCallback(
     async (cur: string | null, reset: boolean) => {
@@ -36,27 +39,49 @@ export default function AdminUsersPage() {
   );
 
   useEffect(() => {
-    if (token === undefined || token === null) return;
-    void loadMore(null, true);
-  }, [token, loadMore]);
+    if (!token) {
+      return;
+    }
+
+    let active = true;
+    const params = new URLSearchParams({ limit: "20" });
+
+    apiFetch<PaginatedUsers>(`/users?${params.toString()}`, { token })
+      .then((data) => {
+        if (!active) return;
+        setUsers(data.items);
+        setCursor(data.next_cursor);
+      })
+      .catch(() => {
+        if (!active) return;
+      })
+      .finally(() => {
+        if (!active) return;
+        setLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [token]);
 
   return (
     <main className="mx-auto max-w-5xl px-4 py-10">
-      <h1 className="text-2xl font-bold text-text mb-6">User Management</h1>
+      <h1 className="text-2xl font-bold text-text mb-6">{t("admin_users.title")}</h1>
       <div className="overflow-x-auto rounded-xl border border-border">
         <table className="w-full text-sm">
           <thead className="border-b border-border bg-surface-raised">
             <tr>
-              <th className="px-4 py-3 text-left text-muted font-medium">Email</th>
-              <th className="px-4 py-3 text-left text-muted font-medium">Role</th>
-              <th className="px-4 py-3 text-left text-muted font-medium">Joined</th>
+              <th className="px-4 py-3 text-left text-muted font-medium">{t("admin_users.email")}</th>
+              <th className="px-4 py-3 text-left text-muted font-medium">{t("admin_users.role")}</th>
+              <th className="px-4 py-3 text-left text-muted font-medium">{t("admin_users.joined")}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border bg-surface">
             {loading && users.length === 0 ? (
               <tr>
                 <td colSpan={3} className="px-4 py-6 text-center text-muted">
-                  Loading…
+                  {t("common.loading")}
                 </td>
               </tr>
             ) : (
@@ -80,7 +105,7 @@ export default function AdminUsersPage() {
             disabled={loading}
             className="rounded-full border border-border px-4 py-2 text-sm text-text hover:bg-surface-muted disabled:opacity-50"
           >
-            {loading ? "Loading…" : "Load more"}
+            {loading ? t("common.loading") : t("admin_users.load_more")}
           </button>
         </div>
       )}

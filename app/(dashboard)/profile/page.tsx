@@ -3,42 +3,59 @@ import { useEffect, useState } from "react";
 import { apiFetch } from "@/lib/api/client";
 import type { MyRegistration } from "@/lib/types";
 import { RegistrationQR } from "@/app/components/RegistrationQR";
+import { useLocale } from "@/app/components/LocaleProvider";
 
 type AuthUser = { id: string; email: string; role: string; token: string };
 type RegistrationStatus = { id: string; nume: string };
 
 export default function ProfilePage() {
-  const [user, setUser] = useState<AuthUser | null>(null);
+  const { locale, t } = useLocale();
+  const [user] = useState<AuthUser | null>(() => {
+    if (typeof window === "undefined") {
+      return null;
+    }
+
+    try {
+      const stored = localStorage.getItem("event_manager_auth");
+      return stored ? (JSON.parse(stored) as AuthUser) : null;
+    } catch {
+      return null;
+    }
+  });
   const [registrations, setRegistrations] = useState<MyRegistration[]>([]);
   const [statuses, setStatuses] = useState<RegistrationStatus[]>([]);
-  const [regLoading, setRegLoading] = useState(false);
+  const [regLoading, setRegLoading] = useState(Boolean(user));
   const [cancellingId, setCancellingId] = useState<string | null>(null);
 
   useEffect(() => {
-    try {
-      const stored = localStorage.getItem("event_manager_auth");
-      if (stored) {
-        const u = JSON.parse(stored) as AuthUser;
-        setUser(u);
-        setRegLoading(true);
-
-        Promise.all([
-          apiFetch<MyRegistration[]>("/users/me/registrations", {
-            token: u.token,
-          }),
-          apiFetch<RegistrationStatus[]>("/lookups/registration-statuses"),
-        ])
-          .then(([regs, stats]) => {
-            setRegistrations(regs);
-            setStatuses(stats);
-          })
-          .catch(() => {})
-          .finally(() => setRegLoading(false));
-      }
-    } catch {
-      /* ignore */
+    if (!user) {
+      return;
     }
-  }, []);
+
+    let active = true;
+    Promise.all([
+      apiFetch<MyRegistration[]>("/users/me/registrations", {
+        token: user.token,
+      }),
+      apiFetch<RegistrationStatus[]>("/lookups/registration-statuses"),
+    ])
+      .then(([regs, stats]) => {
+        if (!active) return;
+        setRegistrations(regs);
+        setStatuses(stats);
+      })
+      .catch(() => {
+        if (!active) return;
+      })
+      .finally(() => {
+        if (!active) return;
+        setRegLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [user]);
 
   async function cancelRegistration(reg: MyRegistration) {
     if (!user) return;
@@ -63,23 +80,25 @@ export default function ProfilePage() {
     }
   }
 
-  if (!user) return <p className="text-muted p-8">Not signed in.</p>;
+  const dateLocale = locale === "ro" ? "ro-RO" : "en-US";
+
+  if (!user) return <p className="text-muted p-8">{t("common.not_signed_in")}</p>;
 
   return (
     <main className="mx-auto max-w-2xl px-4 py-10 space-y-8">
-      <h1 className="text-2xl font-bold text-text">Your Profile</h1>
+      <h1 className="text-2xl font-bold text-text">{t("profile.title")}</h1>
 
       {/* Profile card */}
       <div className="rounded-xl border border-border bg-surface p-6 space-y-4">
         <div>
           <p className="text-xs text-muted uppercase tracking-wider mb-1">
-            Email
+            {t("profile.email")}
           </p>
           <p className="text-text">{user.email}</p>
         </div>
         <div>
           <p className="text-xs text-muted uppercase tracking-wider mb-1">
-            Role
+            {t("profile.role")}
           </p>
           <span className="inline-block rounded-full bg-primary/10 px-3 py-1 text-sm text-primary capitalize">
             {user.role}
@@ -87,7 +106,7 @@ export default function ProfilePage() {
         </div>
         <div>
           <p className="text-xs text-muted uppercase tracking-wider mb-1">
-            User ID
+            {t("profile.user_id")}
           </p>
           <p className="font-mono text-xs text-muted">{user.id}</p>
         </div>
@@ -96,11 +115,11 @@ export default function ProfilePage() {
       {/* My Registrations */}
       <div>
         <h2 className="text-lg font-semibold text-text mb-4">
-          My Registrations
+          {t("profile.registrations")}
         </h2>
-        {regLoading && <p className="text-muted text-sm">Loading…</p>}
+        {regLoading && <p className="text-muted text-sm">{t("common.loading")}</p>}
         {!regLoading && registrations.length === 0 && (
-          <p className="text-muted text-sm">You have no registrations yet.</p>
+          <p className="text-muted text-sm">{t("profile.no_registrations")}</p>
         )}
         <div className="space-y-3">
           {registrations.map((reg) => {
@@ -130,8 +149,8 @@ export default function ProfilePage() {
                   </p>
                   <p className="text-xs text-muted mt-0.5">
                     {reg.event_start_date
-                      ? new Date(reg.event_start_date).toLocaleString("ro-RO")
-                      : "—"}
+                      ? new Date(reg.event_start_date).toLocaleString(dateLocale)
+                      : t("common.none")}
                   </p>
                   <div className="mt-2 flex items-center gap-2 flex-wrap">
                     <StatusBadge
@@ -140,8 +159,8 @@ export default function ProfilePage() {
                     />
                     {reg.check_in_at && (
                       <span className="text-xs text-muted">
-                        Checked in:{" "}
-                        {new Date(reg.check_in_at).toLocaleString("ro-RO")}
+                        {t("profile.checked_in")} {" "}
+                        {new Date(reg.check_in_at).toLocaleString(dateLocale)}
                       </span>
                     )}
                   </div>
@@ -154,7 +173,7 @@ export default function ProfilePage() {
                     disabled={cancellingId === reg.id}
                     className="shrink-0 text-xs text-danger hover:underline disabled:opacity-50"
                   >
-                    {cancellingId === reg.id ? "Cancelling…" : "Cancel"}
+                    {cancellingId === reg.id ? t("profile.cancelling") : t("profile.cancel")}
                   </button>
                 )}
               </div>

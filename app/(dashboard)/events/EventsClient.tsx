@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import type { Event, PaginatedEvents, EventCategory, EventStatus, Location } from "../../../lib/types";
+import { useLocale } from "@/app/components/LocaleProvider";
 import { EventCard } from "../../../components/events/event-card";
 import { CalendarView } from "../../../components/events/CalendarView";
 import { listEvents } from "../../../lib/api/events";
@@ -21,6 +22,7 @@ export function EventsClient({
   locations,
   participationTypes,
 }: EventsClientProps): React.JSX.Element {
+  const { t } = useLocale();
   const [events, setEvents] = useState<Event[]>(initialData.items);
   const [nextCursor, setNextCursor] = useState<string | null>(
     initialData.next_cursor,
@@ -80,7 +82,7 @@ export function EventsClient({
       setEvents(data.items);
       setNextCursor(data.next_cursor);
     } catch (err) {
-      setLoadError(err instanceof Error ? err.message : "Failed to load events");
+      setLoadError(err instanceof Error ? err.message : t("events_filters.failed_to_load"));
     }
   }
 
@@ -93,7 +95,7 @@ export function EventsClient({
           setNextCursor(data.next_cursor);
         })
         .catch((err: unknown) => {
-          setLoadError(err instanceof Error ? err.message : "Failed to load more events");
+          setLoadError(err instanceof Error ? err.message : t("events_filters.failed_to_load_more"));
         });
     });
   }
@@ -126,13 +128,13 @@ export function EventsClient({
           onClick={() => setView("list")}
           className={`rounded-full px-3 py-1.5 text-xs font-medium border transition ${view === "list" ? "bg-primary text-on-primary border-primary" : "border-border text-text hover:bg-surface-muted"}`}
         >
-          List
+          {t("events_filters.list")}
         </button>
         <button
           onClick={() => setView("calendar")}
           className={`rounded-full px-3 py-1.5 text-xs font-medium border transition ${view === "calendar" ? "bg-primary text-on-primary border-primary" : "border-border text-text hover:bg-surface-muted"}`}
         >
-          Calendar
+          {t("events_filters.calendar")}
         </button>
       </div>
 
@@ -148,13 +150,13 @@ export function EventsClient({
             });
           }
         }}
-        placeholder="Search events…"
+        placeholder={t("events_filters.search_placeholder")}
         className="w-full max-w-sm rounded-full border border-border bg-surface px-4 py-1.5 text-sm text-text placeholder:text-muted focus:outline-none focus:ring-1 focus:ring-border"
       />
 
       {/* Date range */}
       <div className="flex flex-wrap items-center gap-3">
-        <span className="text-xs font-medium text-muted">Date:</span>
+        <span className="text-xs font-medium text-muted">{t("events_filters.date")}</span>
         <div className="flex items-center gap-2">
           <input
             type="date"
@@ -167,7 +169,7 @@ export function EventsClient({
             }}
             className="rounded-lg border border-border bg-surface px-3 py-1 text-sm text-text focus:outline-none focus:ring-1 focus:ring-border"
           />
-          <span className="text-xs text-muted">–</span>
+          <span className="text-xs text-muted">-</span>
           <input
             type="date"
             value={dateTo}
@@ -186,7 +188,7 @@ export function EventsClient({
       {/* Location dropdown */}
       {locations.length > 0 && (
         <div className="flex items-center gap-3">
-          <span className="text-xs font-medium text-muted">Location:</span>
+          <span className="text-xs font-medium text-muted">{t("events_filters.location")}</span>
           <select
             value={selectedLocation}
             onChange={(e) => {
@@ -197,7 +199,7 @@ export function EventsClient({
             }}
             className="rounded-lg border border-border bg-surface px-3 py-1 text-sm text-text focus:outline-none focus:ring-1 focus:ring-border"
           >
-            <option value="">All locations</option>
+            <option value="">{t("events_filters.all_locations")}</option>
             {locations.map((loc) => (
               <option key={loc.id} value={loc.id}>
                 {loc.nume_sala}{loc.corp_cladire ? ` (${loc.corp_cladire})` : ""}
@@ -210,7 +212,7 @@ export function EventsClient({
       {/* Participation type chips */}
       {participationTypes.length > 0 && (
         <div className="flex flex-wrap gap-2">
-          <span className="self-center text-xs font-medium text-muted">Mode:</span>
+          <span className="self-center text-xs font-medium text-muted">{t("events_filters.mode")}</span>
           {participationTypes.map((pt) => (
             <button
               key={pt.id}
@@ -236,7 +238,7 @@ export function EventsClient({
       {/* Category filters */}
       {categories.length > 0 && (
         <div className="flex flex-wrap gap-2">
-          <span className="self-center text-xs font-medium text-muted">Category:</span>
+          <span className="self-center text-xs font-medium text-muted">{t("events_filters.category")}</span>
           {categories.map((cat) => (
             <button
               key={cat.id}
@@ -262,7 +264,7 @@ export function EventsClient({
       {/* Status filters */}
       {statuses.length > 0 && (
         <div className="flex flex-wrap gap-2">
-          <span className="self-center text-xs font-medium text-muted">Status:</span>
+          <span className="self-center text-xs font-medium text-muted">{t("events_filters.status")}</span>
           {statuses.map((st) => (
             <button
               key={st.id}
@@ -301,7 +303,7 @@ export function EventsClient({
               : "border-border text-muted hover:bg-surface-muted"
           }`}
         >
-          Requires registration
+          {t("events_filters.requires_registration")}
         </button>
       </div>
 
@@ -311,7 +313,7 @@ export function EventsClient({
           onClick={clearAllFilters}
           className="rounded-full bg-danger-bg px-4 py-1.5 text-sm font-medium text-danger hover:opacity-80"
         >
-          Clear all filters
+          {t("events_filters.clear_filters")}
         </button>
       )}
 
@@ -326,10 +328,10 @@ export function EventsClient({
         <CalendarView events={events} />
       ) : events.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-border p-12 text-center">
-          <p className="text-muted">No events found.</p>
+          <p className="text-muted">{t("events_filters.no_events")}</p>
           {hasActiveFilters && (
             <p className="mt-1 text-sm text-subtle">
-              Try clearing the filters.
+              {t("events_filters.try_clearing")}
             </p>
           )}
         </div>

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { apiFetch } from "@/lib/api/client";
+import { useLocale } from "@/app/components/LocaleProvider";
 
 type Props = {
   eventId: string;
@@ -12,30 +13,48 @@ type Props = {
 type ParticipationType = { id: string; nume: string };
 
 export default function EnrollButton({ eventId, organizerId, participationTypeId }: Props) {
-  const [token, setToken] = useState<string | null>(null);
-  const [canEnroll, setCanEnroll] = useState(true);
+  const { t } = useLocale();
+  const [token] = useState<string | null>(() => {
+    if (typeof window === "undefined") {
+      return null;
+    }
+    return localStorage.getItem("token");
+  });
+  const [canEnroll, setCanEnroll] = useState<boolean>(() => {
+    if (typeof window === "undefined") {
+      return true;
+    }
+    try {
+      const storedAuth = localStorage.getItem("event_manager_auth");
+      if (!storedAuth) return true;
+      const user = JSON.parse(storedAuth) as { id?: string; role?: string };
+      return !(user.role === "organizer" && user.id === organizerId);
+    } catch {
+      return true;
+    }
+  });
   const [resolvedParticipationTypeId, setResolvedParticipationTypeId] = useState<string | null>(
     participationTypeId,
   );
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
-  const [message, setMessage] = useState<string | null>(null);
-
-  useEffect(() => {
-    setToken(localStorage.getItem("token"));
-
+  const [message, setMessage] = useState<string | null>(() => {
+    if (typeof window === "undefined") {
+      return null;
+    }
     try {
       const storedAuth = localStorage.getItem("event_manager_auth");
-      if (!storedAuth) return;
+      if (!storedAuth) return null;
       const user = JSON.parse(storedAuth) as { id?: string; role?: string };
-
       if (user.role === "organizer" && user.id === organizerId) {
-        setCanEnroll(false);
-        setMessage("You cannot register to your own event.");
+        return t("enroll.cannot_own_event");
       }
     } catch {
       // Ignore malformed local storage data.
     }
+    return null;
+  });
 
+  useEffect(() => {
     if (!participationTypeId) {
       apiFetch<ParticipationType[]>("/lookups/participation-types")
         .then((types) => {
@@ -43,22 +62,22 @@ export default function EnrollButton({ eventId, organizerId, participationTypeId
           setResolvedParticipationTypeId(firstTypeId);
           if (!firstTypeId) {
             setCanEnroll(false);
-            setMessage("No participation type is configured yet.");
+            setMessage(t("enroll.no_participation_types"));
           }
         })
         .catch(() => {
           setCanEnroll(false);
-          setMessage("Could not load participation types.");
+          setMessage(t("enroll.failed_to_load_participation_types"));
         });
     }
-  }, [organizerId, participationTypeId]);
+  }, [participationTypeId, t]);
 
   if (!token) return null;
 
   async function handleEnroll() {
     if (!resolvedParticipationTypeId) {
       setStatus("error");
-      setMessage("No participation type is configured for this event.");
+      setMessage(t("enroll.no_participation_type_for_event"));
       return;
     }
 
@@ -71,10 +90,10 @@ export default function EnrollButton({ eventId, organizerId, participationTypeId
         body: JSON.stringify({ tip_participare_id: resolvedParticipationTypeId }),
       });
       setStatus("success");
-      setMessage("You are enrolled!");
+      setMessage(t("enroll.enrolled"));
     } catch (err) {
       setStatus("error");
-      setMessage(err instanceof Error ? err.message : "Failed to enroll.");
+      setMessage(err instanceof Error ? err.message : t("enroll.failed"));
     }
   }
 
@@ -86,7 +105,7 @@ export default function EnrollButton({ eventId, organizerId, participationTypeId
           disabled={status === "loading"}
           className="rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-on-primary hover:opacity-90 disabled:opacity-50"
         >
-          {status === "loading" ? "Enrolling…" : "Enroll"}
+          {status === "loading" ? t("enroll.enrolling") : t("enroll.enroll")}
         </button>
       )}
       {message && status === "success" && (

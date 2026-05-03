@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
+import { useLocale } from "@/app/components/LocaleProvider";
 
 type Participant = {
   id: string;
@@ -35,20 +36,21 @@ function toCsv(rows: Participant[]): string {
 }
 
 export default function ExportCsvButton({ eventId }: Props) {
-  const [role, setRole] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
+  const { t } = useLocale();
+  const [role] = useState<string | null>(() => {
+    if (typeof window === "undefined") {
+      return null;
+    }
     try {
       const userRaw = localStorage.getItem("user");
-      if (userRaw) {
-        const parsed = JSON.parse(userRaw) as { role?: string };
-        setRole(parsed.role ?? null);
-      }
+      if (!userRaw) return null;
+      const parsed = JSON.parse(userRaw) as { role?: string };
+      return parsed.role ?? null;
     } catch {
-      // ignore parse errors
+      return null;
     }
-  }, []);
+  });
+  const [loading, setLoading] = useState(false);
 
   if (role !== "admin" && role !== "organizer") return null;
 
@@ -85,7 +87,7 @@ export default function ExportCsvButton({ eventId }: Props) {
       disabled={loading}
       className="rounded-xl border border-border px-4 py-2 text-sm font-semibold text-text hover:bg-surface-muted disabled:opacity-50 transition"
     >
-      {loading ? "Exporting…" : "⬇ Export CSV"}
+      {loading ? t("export.exporting") : t("export.export_csv")}
     </button>
   );
 }
