@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import type { PaginatedEvents, EventCategory, EventStatus } from "../../../lib/types";
+import type { PaginatedEvents, EventCategory, EventStatus, Location } from "../../../lib/types";
 import { EventsClient } from "./EventsClient";
 
 export const metadata: Metadata = {
@@ -27,10 +27,12 @@ async function fetchJson<T>(path: string): Promise<T | null> {
 }
 
 export default async function EventsPage(): Promise<React.JSX.Element> {
-  const [eventsData, categories, statuses] = await Promise.all([
+  const [eventsData, categories, statuses, locations, participationTypes] = await Promise.all([
     fetchJson<PaginatedEvents>("/events?limit=20"),
     fetchJson<EventCategory[]>("/lookups/event-categories"),
     fetchJson<EventStatus[]>("/lookups/event-statuses"),
+    fetchJson<Location[]>("/lookups/locations"),
+    fetchJson<EventStatus[]>("/lookups/participation-types"),
   ]);
 
   const initialData: PaginatedEvents = eventsData ?? { items: [], next_cursor: null };
@@ -50,6 +52,8 @@ export default async function EventsPage(): Promise<React.JSX.Element> {
         initialData={initialData}
         categories={categories ?? []}
         statuses={statuses ?? []}
+        locations={locations ?? []}
+        participationTypes={participationTypes ?? []}
       />
     </main>
   );
