@@ -1,43 +1,162 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import type { Event, PaginatedEvents, EventCategory, EventStatus, Location } from "../../../lib/types";
 import { useLocale } from "@/app/components/LocaleProvider";
 import { EventCard } from "../../../components/events/event-card";
 import { CalendarView } from "../../../components/events/CalendarView";
 import { listEvents } from "../../../lib/api/events";
+import { slugify } from "@/lib/events/slug";
+
+const PAGE_SIZES = [20, 50, 100] as const;
+type PageSize = (typeof PAGE_SIZES)[number];
+
+export type EventsInitialState = {
+  categoryId: string | null;
+  statusId: string | null;
+  locationId: string;
+  participationTypeId: string | null;
+  from: string;
+  to: string;
+  registration: boolean;
+  search: string;
+  view: "list" | "calendar";
+  limit: PageSize;
+  cursor: string | null;
+  history: (string | null)[];
+};
 
 type EventsClientProps = {
   initialData: PaginatedEvents;
+  initialState: EventsInitialState;
   categories: EventCategory[];
   statuses: EventStatus[];
   locations: Location[];
   participationTypes: EventStatus[];
 };
 
+type EventsQueryState = EventsInitialState;
+type SearchParamsLike = {
+  get: (name: string) => string | null;
+  getAll: (name: string) => string[];
+};
+type FilterOverrides = Partial<{
+  categoryId: string | null;
+  statusId: string | null;
+  locationId: string;
+  participationTypeId: string | null;
+  from: string;
+  to: string;
+  registration: boolean;
+  search: string;
+}>;
+
+function encodeCursor(cursor: string | null): string {
+  return cursor === null ? "_" : cursor;
+}
+
+function decodeCursor(value: string | null): string | null {
+  if (!value || value === "_") return null;
+  return value;
+}
+
+function parsePageSize(raw: string | null): PageSize {
+  const n = Number(raw);
+  if (n === 50 || n === 100) return n;
+  return 20;
+}
+
+function parseView(raw: string | null): "list" | "calendar" {
+  return raw === "calendar" ? "calendar" : "list";
+}
+
+type Lookups = {
+  categories: EventCategory[];
+  statuses: EventStatus[];
+  locations: Location[];
+  participationTypes: EventStatus[];
+};
+
+function buildQueryString(state: EventsQueryState, lookups: Lookups): string {
+  const params = new URLSearchParams();
+  if (state.categoryId) {
+    const cat = lookups.categories.find((c) => c.id === state.categoryId);
+    if (cat) params.set("category", slugify(cat.nume));
+  }
+  if (state.statusId) {
+    const st = lookups.statuses.find((s) => s.id === state.statusId);
+    if (st) params.set("status", slugify(st.nume));
+  }
+  if (state.locationId) {
+    const loc = lookups.locations.find((l) => l.id === state.locationId);
+    if (loc) params.set("location", slugify(loc.nume_sala));
+  }
+  if (state.participationTypeId) {
+    const pt = lookups.participationTypes.find((p) => p.id === state.participationTypeId);
+    if (pt) params.set("ptype", slugify(pt.nume));
+  }
+  if (state.from) params.set("from", state.from);
+  if (state.to) params.set("to", state.to);
+  if (state.registration) params.set("reg", "1");
+  if (state.search) params.set("q", state.search);
+  if (state.view !== "list") params.set("view", state.view);
+  if (state.limit !== 20) params.set("limit", String(state.limit));
+  if (state.cursor) params.set("cursor", state.cursor);
+  state.history.forEach((item) => params.append("h", encodeCursor(item)));
+  return params.toString();
+}
+
+function resolveQueryState(params: SearchParamsLike, lookups: Lookups): EventsQueryState {
+  const catSlug = params.get("category");
+  const stSlug = params.get("status");
+  const locSlug = params.get("location");
+  const ptSlug = params.get("ptype");
+  return {
+    categoryId: lookups.categories.find((c) => slugify(c.nume) === catSlug)?.id ?? null,
+    statusId: lookups.statuses.find((s) => slugify(s.nume) === stSlug)?.id ?? null,
+    locationId: lookups.locations.find((l) => slugify(l.nume_sala) === locSlug)?.id ?? "",
+    participationTypeId: lookups.participationTypes.find((p) => slugify(p.nume) === ptSlug)?.id ?? null,
+    from: params.get("from") ?? "",
+    to: params.get("to") ?? "",
+    registration: params.get("reg") === "1",
+    search: params.get("q") ?? "",
+    view: parseView(params.get("view")),
+    limit: parsePageSize(params.get("limit")),
+    cursor: decodeCursor(params.get("cursor")),
+    history: params.getAll("h").map((entry: string) => decodeCursor(entry)),
+  };
+}
+
 export function EventsClient({
   initialData,
+  initialState,
   categories,
   statuses,
   locations,
   participationTypes,
 }: EventsClientProps): React.JSX.Element {
   const { t } = useLocale();
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [events, setEvents] = useState<Event[]>(initialData.items);
-  const [nextCursor, setNextCursor] = useState<string | null>(
-    initialData.next_cursor,
-  );
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const [selectedStatus, setSelectedStatus] = useState<string | null>(null);
-  const [selectedLocation, setSelectedLocation] = useState<string>("");
-  const [selectedParticipationType, setSelectedParticipationType] = useState<string | null>(null);
-  const [dateFrom, setDateFrom] = useState<string>("");
-  const [dateTo, setDateTo] = useState<string>("");
-  const [requiresRegistration, setRequiresRegistration] = useState<boolean>(false);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [view, setView] = useState<"list" | "calendar">("list");
+  const [nextCursor, setNextCursor] = useState<string | null>(initialData.next_cursor);
+  const [cursorHistory, setCursorHistory] = useState<(string | null)[]>(initialState.history);
+  const [currentCursor, setCurrentCursor] = useState<string | null>(initialState.cursor);
+  const [pageSize, setPageSize] = useState<PageSize>(initialState.limit);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(initialState.categoryId);
+  const [selectedStatus, setSelectedStatus] = useState<string | null>(initialState.statusId);
+  const [selectedLocation, setSelectedLocation] = useState<string>(initialState.locationId);
+  const [selectedParticipationType, setSelectedParticipationType] = useState<string | null>(initialState.participationTypeId);
+  const [dateFrom, setDateFrom] = useState<string>(initialState.from);
+  const [dateTo, setDateTo] = useState<string>(initialState.to);
+  const [requiresRegistration, setRequiresRegistration] = useState<boolean>(initialState.registration);
+  const [searchQuery, setSearchQuery] = useState(initialState.search);
+  const [view, setView] = useState<"list" | "calendar">(initialState.view);
   const [isPending, startTransition] = useTransition();
   const [loadError, setLoadError] = useState<string | null>(null);
+  const didMountRef = useRef(false);
 
   function getStatusLabel(statusId: string | null): string | undefined {
     if (!statusId) return undefined;
@@ -53,6 +172,8 @@ export function EventsClient({
     to: string;
     registration: boolean;
     search: string;
+    limit: number;
+    cursor: string | null;
   }> = {}) {
     const categoryId = overrides.categoryId !== undefined ? overrides.categoryId : selectedCategory;
     const statusId = overrides.statusId !== undefined ? overrides.statusId : selectedStatus;
@@ -63,7 +184,7 @@ export function EventsClient({
     const registration = overrides.registration !== undefined ? overrides.registration : requiresRegistration;
     const search = overrides.search !== undefined ? overrides.search : searchQuery;
     return {
-      limit: 20,
+      limit: overrides.limit !== undefined ? overrides.limit : pageSize,
       categorie_id: categoryId ?? undefined,
       status_id: statusId ?? undefined,
       location_id: locationId || undefined,
@@ -72,47 +193,140 @@ export function EventsClient({
       date_to: to || undefined,
       requires_registration: registration || undefined,
       search: search || undefined,
+      cursor: overrides.cursor !== undefined ? (overrides.cursor ?? undefined) : undefined,
     };
   }
 
-  async function applyFilter(overrides: Parameters<typeof buildFilters>[0] = {}): Promise<void> {
-    setLoadError(null);
-    try {
-      const data = await listEvents(buildFilters(overrides));
-      setEvents(data.items);
-      setNextCursor(data.next_cursor);
-    } catch (err) {
-      setLoadError(err instanceof Error ? err.message : t("events_filters.failed_to_load"));
-    }
+  function readStateFromUI(): EventsQueryState {
+    return {
+      categoryId: selectedCategory,
+      statusId: selectedStatus,
+      locationId: selectedLocation,
+      participationTypeId: selectedParticipationType,
+      from: dateFrom,
+      to: dateTo,
+      registration: requiresRegistration,
+      search: searchQuery,
+      view,
+      limit: pageSize,
+      cursor: currentCursor,
+      history: cursorHistory,
+    };
   }
 
-  function handleLoadMore(): void {
-    if (!nextCursor) return;
+  function pushStateToUrl(next: EventsQueryState): void {
+    const query = buildQueryString(next, { categories, statuses, locations, participationTypes });
+    router.push(query ? `${pathname}?${query}` : pathname);
+  }
+
+  function replaceUIState(next: EventsQueryState): void {
+    setSelectedCategory(next.categoryId);
+    setSelectedStatus(next.statusId);
+    setSelectedLocation(next.locationId);
+    setSelectedParticipationType(next.participationTypeId);
+    setDateFrom(next.from);
+    setDateTo(next.to);
+    setRequiresRegistration(next.registration);
+    setSearchQuery(next.search);
+    setView(next.view);
+    setPageSize(next.limit);
+    setCurrentCursor(next.cursor);
+    setCursorHistory(next.history);
+  }
+
+  function navigateWithState(next: EventsQueryState): void {
+    replaceUIState(next);
+    pushStateToUrl(next);
+  }
+
+  useEffect(() => {
+    if (!didMountRef.current) {
+      didMountRef.current = true;
+      return;
+    }
+
+    const next = resolveQueryState(searchParams, { categories, statuses, locations, participationTypes });
+    replaceUIState(next);
+    setLoadError(null);
+
     startTransition(() => {
-      listEvents({ ...buildFilters(), cursor: nextCursor })
+      listEvents({
+        limit: next.limit,
+        categorie_id: next.categoryId ?? undefined,
+        status_id: next.statusId ?? undefined,
+        location_id: next.locationId || undefined,
+        tip_participare_id: next.participationTypeId ?? undefined,
+        date_from: next.from || undefined,
+        date_to: next.to || undefined,
+        requires_registration: next.registration || undefined,
+        search: next.search || undefined,
+        cursor: next.cursor ?? undefined,
+      })
         .then((data) => {
-          setEvents((prev) => [...prev, ...data.items]);
+          setEvents(data.items);
           setNextCursor(data.next_cursor);
         })
         .catch((err: unknown) => {
-          setLoadError(err instanceof Error ? err.message : t("events_filters.failed_to_load_more"));
+          setLoadError(err instanceof Error ? err.message : t("events_filters.failed_to_load"));
         });
     });
+  }, [pathname, router, searchParams, t]);
+
+  function applyFilter(overrides: FilterOverrides = {}): void {
+    const current = readStateFromUI();
+    const next: EventsQueryState = {
+      ...current,
+      categoryId: overrides.categoryId !== undefined ? overrides.categoryId : current.categoryId,
+      statusId: overrides.statusId !== undefined ? overrides.statusId : current.statusId,
+      locationId: overrides.locationId !== undefined ? overrides.locationId : current.locationId,
+      participationTypeId: overrides.participationTypeId !== undefined ? overrides.participationTypeId : current.participationTypeId,
+      from: overrides.from !== undefined ? overrides.from : current.from,
+      to: overrides.to !== undefined ? overrides.to : current.to,
+      registration: overrides.registration !== undefined ? overrides.registration : current.registration,
+      search: overrides.search !== undefined ? overrides.search : current.search,
+      cursor: null,
+      history: [],
+    };
+    navigateWithState(next);
+  }
+
+  function handleNextPage(): void {
+    if (!nextCursor) return;
+    const current = readStateFromUI();
+    const next: EventsQueryState = {
+      ...current,
+      cursor: nextCursor,
+      history: [...current.history, current.cursor],
+    };
+    navigateWithState(next);
+  }
+
+  function handlePrevPage(): void {
+    if (cursorHistory.length === 0) return;
+    const current = readStateFromUI();
+    const prevCursor = current.history[current.history.length - 1] ?? null;
+    const next: EventsQueryState = {
+      ...current,
+      cursor: prevCursor,
+      history: current.history.slice(0, -1),
+    };
+    navigateWithState(next);
   }
 
   function clearAllFilters(): void {
-    setSelectedCategory(null);
-    setSelectedStatus(null);
-    setSelectedLocation("");
-    setSelectedParticipationType(null);
-    setDateFrom("");
-    setDateTo("");
-    setRequiresRegistration(false);
-    setSearchQuery("");
-    startTransition(() => {
-      listEvents({ limit: 20 })
-        .then((data) => { setEvents(data.items); setNextCursor(data.next_cursor); })
-        .catch(() => undefined);
+    navigateWithState({
+      categoryId: null,
+      statusId: null,
+      locationId: "",
+      participationTypeId: null,
+      from: "",
+      to: "",
+      registration: false,
+      search: "",
+      view,
+      limit: pageSize,
+      cursor: null,
+      history: [],
     });
   }
 
@@ -125,13 +339,19 @@ export function EventsClient({
       {/* View toggle */}
       <div className="flex flex-wrap gap-2">
         <button
-          onClick={() => setView("list")}
+          onClick={() => {
+            const current = readStateFromUI();
+            navigateWithState({ ...current, view: "list" });
+          }}
           className={`rounded-full px-3 py-1.5 text-xs font-medium border transition ${view === "list" ? "bg-primary text-on-primary border-primary" : "border-border text-text hover:bg-surface-muted"}`}
         >
           {t("events_filters.list")}
         </button>
         <button
-          onClick={() => setView("calendar")}
+          onClick={() => {
+            const current = readStateFromUI();
+            navigateWithState({ ...current, view: "calendar" });
+          }}
           className={`rounded-full px-3 py-1.5 text-xs font-medium border transition ${view === "calendar" ? "bg-primary text-on-primary border-primary" : "border-border text-text hover:bg-surface-muted"}`}
         >
           {t("events_filters.calendar")}
@@ -145,9 +365,7 @@ export function EventsClient({
         onChange={(e) => setSearchQuery(e.target.value)}
         onKeyDown={(e) => {
           if (e.key === "Enter") {
-            startTransition(() => {
-              applyFilter({ search: e.currentTarget.value }).catch(() => undefined);
-            });
+            applyFilter({ search: e.currentTarget.value });
           }
         }}
         placeholder={t("events_filters.search_placeholder")}
@@ -163,9 +381,7 @@ export function EventsClient({
             value={dateFrom}
             onChange={(e) => {
               setDateFrom(e.target.value);
-              startTransition(() => {
-                applyFilter({ from: e.target.value }).catch(() => undefined);
-              });
+              applyFilter({ from: e.target.value });
             }}
             className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text focus:outline-none focus:ring-1 focus:ring-border sm:w-auto"
           />
@@ -176,9 +392,7 @@ export function EventsClient({
             min={dateFrom || undefined}
             onChange={(e) => {
               setDateTo(e.target.value);
-              startTransition(() => {
-                applyFilter({ to: e.target.value }).catch(() => undefined);
-              });
+              applyFilter({ to: e.target.value });
             }}
             className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text focus:outline-none focus:ring-1 focus:ring-border sm:w-auto"
           />
@@ -193,9 +407,7 @@ export function EventsClient({
             value={selectedLocation}
             onChange={(e) => {
               setSelectedLocation(e.target.value);
-              startTransition(() => {
-                applyFilter({ locationId: e.target.value }).catch(() => undefined);
-              });
+              applyFilter({ locationId: e.target.value });
             }}
             className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text focus:outline-none focus:ring-1 focus:ring-border sm:w-auto"
           >
@@ -219,9 +431,7 @@ export function EventsClient({
               onClick={() => {
                 const next = pt.id === selectedParticipationType ? null : pt.id;
                 setSelectedParticipationType(next);
-                startTransition(() => {
-                  applyFilter({ participationTypeId: next }).catch(() => undefined);
-                });
+                applyFilter({ participationTypeId: next });
               }}
               className={`rounded-full px-3 py-1 text-xs font-medium transition ${
                 selectedParticipationType === pt.id
@@ -245,9 +455,7 @@ export function EventsClient({
               onClick={() => {
                 const next = cat.id === selectedCategory ? null : cat.id;
                 setSelectedCategory(next);
-                startTransition(() => {
-                  applyFilter({ categoryId: next }).catch(() => undefined);
-                });
+                applyFilter({ categoryId: next });
               }}
               className={`rounded-full px-4 py-1.5 text-sm font-medium transition ${
                 selectedCategory === cat.id
@@ -271,9 +479,7 @@ export function EventsClient({
               onClick={() => {
                 const next = st.id === selectedStatus ? null : st.id;
                 setSelectedStatus(next);
-                startTransition(() => {
-                  applyFilter({ statusId: next }).catch(() => undefined);
-                });
+                applyFilter({ statusId: next });
               }}
               className={`rounded-full px-3 py-1 text-xs font-medium transition ${
                 selectedStatus === st.id
@@ -293,9 +499,7 @@ export function EventsClient({
           onClick={() => {
             const next = !requiresRegistration;
             setRequiresRegistration(next);
-            startTransition(() => {
-              applyFilter({ registration: next }).catch(() => undefined);
-            });
+            applyFilter({ registration: next });
           }}
           className={`rounded-full px-3 py-1 text-xs font-medium transition border ${
             requiresRegistration
@@ -347,18 +551,55 @@ export function EventsClient({
         </div>
       )}
 
-      {/* Load more */}
-      {nextCursor && (
-        <div className="flex justify-center pt-2">
+      {/* Pagination controls */}
+      <div className="flex flex-col gap-4 pt-2 sm:flex-row sm:items-center sm:justify-between">
+        {/* Page size selector */}
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-muted">{t("pagination.per_page")}</span>
+          {PAGE_SIZES.map((size) => (
+            <button
+              key={size}
+              onClick={() => {
+                const current = readStateFromUI();
+                navigateWithState({
+                  ...current,
+                  limit: size,
+                  cursor: null,
+                  history: [],
+                });
+              }}
+              className={`rounded-full px-3 py-1 text-xs font-medium border transition ${
+                pageSize === size
+                  ? "bg-primary text-on-primary border-primary"
+                  : "border-border text-text hover:bg-surface-muted"
+              }`}
+            >
+              {size}
+            </button>
+          ))}
+        </div>
+
+        {/* Prev / Next */}
+        <div className="flex items-center gap-2">
           <button
-            onClick={handleLoadMore}
-            disabled={isPending}
-            className="w-full rounded-xl border border-border bg-surface px-6 py-2.5 text-sm font-medium text-text shadow-sm transition hover:bg-surface-raised disabled:opacity-50 sm:w-auto"
+            onClick={handlePrevPage}
+            disabled={isPending || cursorHistory.length === 0}
+            className="rounded-xl border border-border bg-surface px-4 py-2 text-sm font-medium text-text transition hover:bg-surface-raised disabled:opacity-40"
           >
-            {isPending ? "Loading…" : "Load more"}
+            ← {t("pagination.prev")}
+          </button>
+          <span className="text-xs text-muted">
+            {t("pagination.page")} {cursorHistory.length + 1}
+          </span>
+          <button
+            onClick={handleNextPage}
+            disabled={isPending || !nextCursor}
+            className="rounded-xl border border-border bg-surface px-4 py-2 text-sm font-medium text-text transition hover:bg-surface-raised disabled:opacity-40"
+          >
+            {t("pagination.next")} →
           </button>
         </div>
-      )}
+      </div>
     </div>
   );
 }

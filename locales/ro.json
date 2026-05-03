@@ -115,6 +115,12 @@
     "no_events": "Nu au fost gasite evenimente.",
     "try_clearing": "Incearca sa resetezi filtrele."
   },
+  "pagination": {
+    "per_page": "Pe pagina:",
+    "page": "Pagina",
+    "prev": "Anterior",
+    "next": "Urmator"
+  },
   "event_detail": {
     "back_to_events": "Inapoi la evenimente",
     "description": "Descriere",

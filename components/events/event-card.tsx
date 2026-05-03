@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { Event } from "../../lib/types";
+import { getEventPath } from "@/lib/events/slug";
 
 type EventCardProps = {
   event: Event;
@@ -40,7 +41,7 @@ export function EventCard({
 }: EventCardProps): React.JSX.Element {
   return (
     <Link
-      href={`/events/${event.id}`}
+      href={getEventPath(event)}
       className="group block rounded-2xl border border-border bg-surface p-5 shadow-sm transition hover:border-primary/50 hover:shadow-md"
     >
       <div className="flex items-start justify-between gap-3">

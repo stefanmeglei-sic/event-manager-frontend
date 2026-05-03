@@ -5,7 +5,9 @@ import { useRouter, useParams } from "next/navigation";
 
 import { useAuth } from "@/app/components/AuthProvider";
 import { useLocale } from "@/app/components/LocaleProvider";
+import { findEventBySlug } from "@/lib/api/events";
 import { apiFetch } from "@/lib/api/client";
+import { getEventPath } from "@/lib/events/slug";
 import {
   getEventCategories,
   getEventStatuses,
@@ -17,7 +19,7 @@ import type { Event, EventCategory, EventStatus, Location } from "@/lib/types";
 export default function EditEventPage(): React.JSX.Element {
   const router = useRouter();
   const params = useParams<{ id: string }>();
-  const id = params.id;
+  const slug = params.id;
   const { t } = useLocale();
   const { user } = useAuth();
 
@@ -37,6 +39,8 @@ export default function EditEventPage(): React.JSX.Element {
   const [maxParticipants, setMaxParticipants] = useState("");
   const [deadline, setDeadline] = useState("");
   const [registrationLink, setRegistrationLink] = useState("");
+  const [eventId, setEventId] = useState<string | null>(null);
+  const [organizerId, setOrganizerId] = useState<string | null>(null);
 
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -53,19 +57,25 @@ export default function EditEventPage(): React.JSX.Element {
   }
 
   useEffect(() => {
-    if (!id) return;
+    if (!slug) return;
     Promise.all([
-      apiFetch<Event>(`/events/${id}`),
+      findEventBySlug(slug),
       getEventCategories(),
       getEventStatuses(),
       getLocations(),
       getParticipationTypes(),
     ])
       .then(([event, cats, sts, locs, parts]) => {
+        if (!event) {
+          throw new Error(t("event_form.failed_to_load_event"));
+        }
+
         setCategories(cats);
         setStatuses(sts);
         setLocations(locs);
         setParticipationTypes(parts);
+        setEventId(event.id);
+        setOrganizerId(event.organizer_id);
 
         setTitle(event.titlu);
         setDescription(event.descriere ?? "");
@@ -83,15 +93,15 @@ export default function EditEventPage(): React.JSX.Element {
       .catch((err: unknown) => {
         setError(err instanceof Error ? err.message : t("event_form.failed_to_load_event"));
       });
-  }, [id, t]);
+  }, [slug, t]);
 
   async function onSubmit(e: FormEvent<HTMLFormElement>): Promise<void> {
     e.preventDefault();
-    if (!user) return;
+    if (!user || !eventId) return;
     setError(null);
     setIsSaving(true);
     try {
-      await apiFetch(`/events/${id}`, {
+      await apiFetch(`/events/${eventId}`, {
         method: "PATCH",
         body: JSON.stringify({
           titlu: title,
@@ -107,7 +117,13 @@ export default function EditEventPage(): React.JSX.Element {
           link_inscriere: registrationLink || null,
         }),
       });
-      router.push(`/events/${id}`);
+      router.push(
+        getEventPath({
+          titlu: title,
+          organizer_id: organizerId,
+          start_date: new Date(startDate).toISOString(),
+        }),
+      );
     } catch (err) {
       setError(err instanceof Error ? err.message : t("event_form.failed_to_update"));
     } finally {
@@ -292,7 +308,7 @@ export default function EditEventPage(): React.JSX.Element {
           </button>
           <button
             type="button"
-            onClick={() => router.push(`/events/${id}`)}
+            onClick={() => router.push(`/events/${slug}`)}
             className="rounded-xl border border-border px-5 py-2.5 text-sm font-semibold text-text hover:bg-surface-muted"
           >
             {t("common.cancel")}

@@ -3,6 +3,9 @@
 import { useState, useEffect } from "react";
 import { useLocale } from "@/app/components/LocaleProvider";
 
+const REVIEW_PAGE_SIZES = [5, 10, 20] as const;
+type ReviewPageSize = (typeof REVIEW_PAGE_SIZES)[number];
+
 type FeedbackItem = {
   id: string;
   rating: number;
@@ -37,6 +40,8 @@ export default function FeedbackSection({ eventId, eventEndDate }: Props) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [fetchError, setFetchError] = useState(false);
+  const [reviewPage, setReviewPage] = useState(0);
+  const [reviewPageSize, setReviewPageSize] = useState<ReviewPageSize>(5);
 
   useEffect(() => {
     const baseUrl =
@@ -144,8 +149,26 @@ export default function FeedbackSection({ eventId, eventEndDate }: Props) {
 
       {feedback && feedback.items.length > 0 && (
         <div className="space-y-3 pt-2">
-          <p className="text-xs text-muted uppercase tracking-wider">{t("feedback.reviews")}</p>
-          {feedback.items.map((item) => (
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <p className="text-xs text-muted uppercase tracking-wider">{t("feedback.reviews")}</p>
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-muted">{t("pagination.per_page")}</span>
+              {REVIEW_PAGE_SIZES.map((size) => (
+                <button
+                  key={size}
+                  onClick={() => { setReviewPageSize(size); setReviewPage(0); }}
+                  className={`rounded-full px-2.5 py-0.5 text-xs font-medium border transition ${
+                    reviewPageSize === size
+                      ? "bg-primary text-on-primary border-primary"
+                      : "border-border text-text hover:bg-surface-muted"
+                  }`}
+                >
+                  {size}
+                </button>
+              ))}
+            </div>
+          </div>
+          {feedback.items.slice(reviewPage * reviewPageSize, (reviewPage + 1) * reviewPageSize).map((item) => (
             <div key={item.id} className="rounded-xl border border-border bg-surface p-4 space-y-1">
               <div className="flex items-center justify-between">
                 <span className="text-sm text-text">
@@ -158,6 +181,28 @@ export default function FeedbackSection({ eventId, eventEndDate }: Props) {
               )}
             </div>
           ))}
+          {/* Prev / Next for reviews */}
+          {feedback.items.length > reviewPageSize && (
+            <div className="flex items-center justify-between pt-1">
+              <button
+                onClick={() => setReviewPage((p) => Math.max(0, p - 1))}
+                disabled={reviewPage === 0}
+                className="rounded-xl border border-border px-3 py-1.5 text-xs font-medium text-text transition hover:bg-surface-raised disabled:opacity-40"
+              >
+                ← {t("pagination.prev")}
+              </button>
+              <span className="text-xs text-muted">
+                {t("pagination.page")} {reviewPage + 1} / {Math.ceil(feedback.items.length / reviewPageSize)}
+              </span>
+              <button
+                onClick={() => setReviewPage((p) => Math.min(Math.ceil(feedback.items.length / reviewPageSize) - 1, p + 1))}
+                disabled={(reviewPage + 1) * reviewPageSize >= feedback.items.length}
+                className="rounded-xl border border-border px-3 py-1.5 text-xs font-medium text-text transition hover:bg-surface-raised disabled:opacity-40"
+              >
+                {t("pagination.next")} →
+              </button>
+            </div>
+          )}
         </div>
       )}
     </div>

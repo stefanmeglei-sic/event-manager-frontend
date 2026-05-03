@@ -1,6 +1,7 @@
 "use client";
 import Link from "next/link";
 import type { Event } from "@/lib/types";
+import { getEventPath } from "@/lib/events/slug";
 
 type Props = { events: Event[] };
 
@@ -57,7 +58,7 @@ export function CalendarView({ events }: Props) {
                 {dayEvents.map((ev) => (
                   <Link
                     key={ev.id}
-                    href={`/events/${ev.id}`}
+                    href={getEventPath(ev)}
                     className="block rounded-lg border border-border bg-surface-raised px-3 py-2 transition hover:border-primary/40"
                   >
                     <p className="text-sm font-medium text-text">{ev.titlu}</p>
@@ -94,7 +95,7 @@ export function CalendarView({ events }: Props) {
                   {(eventsByDay[day] ?? []).slice(0, 2).map((ev) => (
                     <Link
                       key={ev.id}
-                      href={`/events/${ev.id}`}
+                      href={getEventPath(ev)}
                       className="block truncate rounded bg-primary/10 px-1 py-0.5 text-[10px] text-primary hover:bg-primary/20"
                       title={ev.titlu}
                     >

@@ -8,6 +8,7 @@ export type Event = {
   categorie_id: string | null;
   status_id: string | null;
   organizer_id: string;
+  organizer_name: string | null;
   tip_participare_id: string | null;
   max_participanti: number | null;
   deadline_inscriere: string | null;

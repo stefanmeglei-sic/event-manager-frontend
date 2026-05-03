@@ -1,5 +1,6 @@
 import { apiFetch } from './client';
 import type { Event, EventCreate, PaginatedEvents } from '../types';
+import { getEventLegacySlug, getEventSlug, toEventSlug } from '@/lib/events/slug';
 
 export type ListEventsParams = {
   limit?: number;
@@ -44,4 +45,29 @@ export async function createEvent(payload: EventCreate): Promise<Event> {
     method: 'POST',
     body: JSON.stringify(payload),
   });
+}
+
+export async function findEventBySlug(
+  slug: string,
+  options?: { limit?: number; maxPages?: number },
+): Promise<Event | null> {
+  const decoded = decodeURIComponent(slug);
+  const target = toEventSlug(decoded);
+  const limit = options?.limit ?? 100;
+  const maxPages = options?.maxPages ?? 40;
+
+  let cursor: string | null = null;
+  for (let i = 0; i < maxPages; i += 1) {
+    const page = await listEvents({ limit, cursor: cursor ?? undefined });
+    const match = page.items.find((item) => {
+      const composite = getEventSlug(item);
+      const legacy = getEventLegacySlug(item);
+      return composite === decoded || legacy === target;
+    });
+    if (match) return match;
+    if (!page.next_cursor) break;
+    cursor = page.next_cursor;
+  }
+
+  return null;
 }

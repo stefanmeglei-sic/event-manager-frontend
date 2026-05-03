@@ -4,6 +4,7 @@ import Link from "next/link";
 import type { Event, PaginatedEvents } from "@/lib/types";
 import { getDictionary, translate } from "@/lib/i18n/shared";
 import { getServerLocale } from "@/lib/i18n/server";
+import { getEventEditPath, getEventPath } from "@/lib/events/slug";
 
 type CurrentUser = {
   id: string;
@@ -118,13 +119,13 @@ export default async function OrganizerPage(): Promise<React.JSX.Element> {
                   </p>
                   <div className="mt-4 flex flex-wrap gap-2">
                     <Link
-                      href={`/events/${event.id}`}
+                      href={getEventPath(event)}
                       className="rounded-lg border border-border px-3 py-1 text-xs text-text transition hover:bg-surface-muted"
                     >
                       {translate(dictionary, "common.view")}
                     </Link>
                     <Link
-                      href={`/events/${event.id}/edit`}
+                      href={getEventEditPath(event)}
                       className="rounded-lg border border-border px-3 py-1 text-xs text-text transition hover:bg-surface-muted"
                     >
                       {translate(dictionary, "common.edit")}
@@ -156,13 +157,13 @@ export default async function OrganizerPage(): Promise<React.JSX.Element> {
                     <td className="px-4 py-3">
                       <div className="flex gap-2">
                         <Link
-                          href={`/events/${event.id}`}
+                          href={getEventPath(event)}
                           className="rounded-lg border border-border px-3 py-1 text-xs text-text hover:bg-surface-muted transition"
                         >
                           {translate(dictionary, "common.view")}
                         </Link>
                         <Link
-                          href={`/events/${event.id}/edit`}
+                          href={getEventEditPath(event)}
                           className="rounded-lg border border-border px-3 py-1 text-xs text-text hover:bg-surface-muted transition"
                         >
                           {translate(dictionary, "common.edit")}

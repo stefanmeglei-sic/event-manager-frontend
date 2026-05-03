@@ -1,5 +1,8 @@
 import Link from "next/link";
+import { notFound } from "next/navigation";
 import { apiFetch } from "@/lib/api/client";
+import { findEventBySlug } from "@/lib/api/events";
+import { getEventEditPath } from "@/lib/events/slug";
 import { getDictionary, translate } from "@/lib/i18n/shared";
 import { getServerLocale } from "@/lib/i18n/server";
 import type { Event, Location, EventCategory, EventStatus } from "@/lib/types";
@@ -32,14 +35,20 @@ export default async function EventDetailPage({ params }: Props) {
   const locale = await getServerLocale();
   const dictionary = getDictionary(locale);
   const dateLocale = locale === "ro" ? "ro-RO" : "en-US";
-  const { id } = await params;
+  const { id: slug } = await params;
 
   const [event, locations, categories, statuses] = await Promise.all([
-    apiFetch<Event>(`/events/${id}`),
+    findEventBySlug(slug),
     apiFetch<Location[]>("/lookups/locations"),
     apiFetch<EventCategory[]>("/lookups/event-categories"),
     apiFetch<EventStatus[]>("/lookups/event-statuses"),
   ]);
+
+  if (!event) {
+    notFound();
+  }
+
+  const eventId = event.id;
 
   const location = locations.find((l) => l.id === event.locatie_id);
   const category = categories.find((c) => c.id === event.categorie_id);
@@ -137,7 +146,7 @@ export default async function EventDetailPage({ params }: Props) {
           <p className="text-xs text-muted uppercase tracking-wider mb-2">{translate(dictionary, "event_detail.qr_code")}</p>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src={`${process.env.NEXT_PUBLIC_BROWSER_API_URL ?? "http://localhost:8000/api/v1"}/events/${id}/qr`}
+            src={`${process.env.NEXT_PUBLIC_BROWSER_API_URL ?? "http://localhost:8000/api/v1"}/events/${eventId}/qr`}
             alt={translate(dictionary, "qr.event_alt")}
             width={160}
             height={160}
@@ -147,12 +156,12 @@ export default async function EventDetailPage({ params }: Props) {
 
         <div className="border-t border-border pt-4 flex gap-3">
           <EnrollButton
-            eventId={id}
+            eventId={eventId}
             organizerId={event.organizer_id}
             participationTypeId={event.tip_participare_id}
           />
           <Link
-            href={`/events/${id}/edit`}
+            href={getEventEditPath(event)}
             className="mt-8 inline-block rounded-xl border border-border px-5 py-2.5 text-sm font-semibold text-text hover:bg-surface-muted"
           >
             {translate(dictionary, "event_detail.edit_event")}
@@ -160,13 +169,13 @@ export default async function EventDetailPage({ params }: Props) {
         </div>
 
         {draftStatus && event.status_id === draftStatus.id && (
-          <ValidateButtons eventId={id} />
+          <ValidateButtons eventId={eventId} />
         )}
 
         {/* F5+F6: Calendar actions */}
         <div className="border-t border-border pt-4 flex flex-wrap gap-3 items-center">
           <a
-            href={`${process.env.NEXT_PUBLIC_BROWSER_API_URL ?? "http://localhost:8000/api/v1"}/events/${id}/ics`}
+            href={`${process.env.NEXT_PUBLIC_BROWSER_API_URL ?? "http://localhost:8000/api/v1"}/events/${eventId}/ics`}
             download
             className="rounded-xl border border-border px-4 py-2 text-sm font-semibold text-text hover:bg-surface-muted transition"
           >
@@ -181,11 +190,11 @@ export default async function EventDetailPage({ params }: Props) {
             {translate(dictionary, "event_detail.google_calendar")}
           </a>
           {/* F11: CSV Export (client component checks role) */}
-          <ExportCsvButton eventId={id} />
+          <ExportCsvButton eventId={eventId} />
         </div>
 
         {/* F7: Feedback section (client component, only shows when eligible) */}
-        <FeedbackSection eventId={id} eventEndDate={event.end_date} />
+        <FeedbackSection eventId={eventId} eventEndDate={event.end_date} />
       </div>
     </main>
   );
