@@ -53,6 +53,13 @@ export async function findEventBySlug(
 ): Promise<Event | null> {
   const decoded = decodeURIComponent(slug);
   const target = toEventSlug(decoded);
+
+  try {
+    return await apiFetch<Event>(`/events/by-slug/${encodeURIComponent(decoded)}`);
+  } catch {
+    // Fallback to legacy client-side scan for backward compatibility.
+  }
+
   const limit = options?.limit ?? 100;
   const maxPages = options?.maxPages ?? 40;
 
