@@ -12,7 +12,13 @@ import { slugify } from "@/lib/events/slug";
 const PAGE_SIZES = [20, 50, 100] as const;
 type PageSize = (typeof PAGE_SIZES)[number];
 
+type OrganizerOption = {
+  id: string;
+  label: string;
+};
+
 export type EventsInitialState = {
+  organizerId: string | null;
   categoryId: string | null;
   statusId: string | null;
   locationId: string;
@@ -30,6 +36,7 @@ export type EventsInitialState = {
 type EventsClientProps = {
   initialData: PaginatedEvents;
   initialState: EventsInitialState;
+  organizers: OrganizerOption[];
   categories: EventCategory[];
   statuses: EventStatus[];
   locations: Location[];
@@ -42,6 +49,7 @@ type SearchParamsLike = {
   getAll: (name: string) => string[];
 };
 type FilterOverrides = Partial<{
+  organizerId: string | null;
   categoryId: string | null;
   statusId: string | null;
   locationId: string;
@@ -72,6 +80,7 @@ function parseView(raw: string | null): "list" | "calendar" {
 }
 
 type Lookups = {
+  organizers: OrganizerOption[];
   categories: EventCategory[];
   statuses: EventStatus[];
   locations: Location[];
@@ -80,6 +89,10 @@ type Lookups = {
 
 function buildQueryString(state: EventsQueryState, lookups: Lookups): string {
   const params = new URLSearchParams();
+  if (state.organizerId) {
+    const organizer = lookups.organizers.find((o) => o.id === state.organizerId);
+    if (organizer) params.set("organizer", slugify(organizer.label));
+  }
   if (state.categoryId) {
     const cat = lookups.categories.find((c) => c.id === state.categoryId);
     if (cat) params.set("category", slugify(cat.nume));
@@ -108,11 +121,13 @@ function buildQueryString(state: EventsQueryState, lookups: Lookups): string {
 }
 
 function resolveQueryState(params: SearchParamsLike, lookups: Lookups): EventsQueryState {
+  const organizerSlug = params.get("organizer");
   const catSlug = params.get("category");
   const stSlug = params.get("status");
   const locSlug = params.get("location");
   const ptSlug = params.get("ptype");
   return {
+    organizerId: lookups.organizers.find((o) => slugify(o.label) === organizerSlug)?.id ?? null,
     categoryId: lookups.categories.find((c) => slugify(c.nume) === catSlug)?.id ?? null,
     statusId: lookups.statuses.find((s) => slugify(s.nume) === stSlug)?.id ?? null,
     locationId: lookups.locations.find((l) => slugify(l.nume_sala) === locSlug)?.id ?? "",
@@ -131,6 +146,7 @@ function resolveQueryState(params: SearchParamsLike, lookups: Lookups): EventsQu
 export function EventsClient({
   initialData,
   initialState,
+  organizers,
   categories,
   statuses,
   locations,
@@ -145,6 +161,7 @@ export function EventsClient({
   const [cursorHistory, setCursorHistory] = useState<(string | null)[]>(initialState.history);
   const [currentCursor, setCurrentCursor] = useState<string | null>(initialState.cursor);
   const [pageSize, setPageSize] = useState<PageSize>(initialState.limit);
+  const [selectedOrganizer, setSelectedOrganizer] = useState<string | null>(initialState.organizerId);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(initialState.categoryId);
   const [selectedStatus, setSelectedStatus] = useState<string | null>(initialState.statusId);
   const [selectedLocation, setSelectedLocation] = useState<string>(initialState.locationId);
@@ -163,42 +180,9 @@ export function EventsClient({
     return statuses.find((s) => s.id === statusId)?.nume;
   }
 
-  function buildFilters(overrides: Partial<{
-    categoryId: string | null;
-    statusId: string | null;
-    locationId: string;
-    participationTypeId: string | null;
-    from: string;
-    to: string;
-    registration: boolean;
-    search: string;
-    limit: number;
-    cursor: string | null;
-  }> = {}) {
-    const categoryId = overrides.categoryId !== undefined ? overrides.categoryId : selectedCategory;
-    const statusId = overrides.statusId !== undefined ? overrides.statusId : selectedStatus;
-    const locationId = overrides.locationId !== undefined ? overrides.locationId : selectedLocation;
-    const participationTypeId = overrides.participationTypeId !== undefined ? overrides.participationTypeId : selectedParticipationType;
-    const from = overrides.from !== undefined ? overrides.from : dateFrom;
-    const to = overrides.to !== undefined ? overrides.to : dateTo;
-    const registration = overrides.registration !== undefined ? overrides.registration : requiresRegistration;
-    const search = overrides.search !== undefined ? overrides.search : searchQuery;
-    return {
-      limit: overrides.limit !== undefined ? overrides.limit : pageSize,
-      categorie_id: categoryId ?? undefined,
-      status_id: statusId ?? undefined,
-      location_id: locationId || undefined,
-      tip_participare_id: participationTypeId ?? undefined,
-      date_from: from || undefined,
-      date_to: to || undefined,
-      requires_registration: registration || undefined,
-      search: search || undefined,
-      cursor: overrides.cursor !== undefined ? (overrides.cursor ?? undefined) : undefined,
-    };
-  }
-
   function readStateFromUI(): EventsQueryState {
     return {
+      organizerId: selectedOrganizer,
       categoryId: selectedCategory,
       statusId: selectedStatus,
       locationId: selectedLocation,
@@ -215,11 +199,12 @@ export function EventsClient({
   }
 
   function pushStateToUrl(next: EventsQueryState): void {
-    const query = buildQueryString(next, { categories, statuses, locations, participationTypes });
+    const query = buildQueryString(next, { organizers, categories, statuses, locations, participationTypes });
     router.push(query ? `${pathname}?${query}` : pathname);
   }
 
   function replaceUIState(next: EventsQueryState): void {
+    setSelectedOrganizer(next.organizerId);
     setSelectedCategory(next.categoryId);
     setSelectedStatus(next.statusId);
     setSelectedLocation(next.locationId);
@@ -245,13 +230,14 @@ export function EventsClient({
       return;
     }
 
-    const next = resolveQueryState(searchParams, { categories, statuses, locations, participationTypes });
+    const next = resolveQueryState(searchParams, { organizers, categories, statuses, locations, participationTypes });
     replaceUIState(next);
     setLoadError(null);
 
     startTransition(() => {
       listEvents({
         limit: next.limit,
+        organizer_id: next.organizerId ?? undefined,
         categorie_id: next.categoryId ?? undefined,
         status_id: next.statusId ?? undefined,
         location_id: next.locationId || undefined,
@@ -270,12 +256,23 @@ export function EventsClient({
           setLoadError(err instanceof Error ? err.message : t("events_filters.failed_to_load"));
         });
     });
-  }, [pathname, router, searchParams, t]);
+  }, [
+    categories,
+    locations,
+    organizers,
+    participationTypes,
+    pathname,
+    router,
+    searchParams,
+    statuses,
+    t,
+  ]);
 
   function applyFilter(overrides: FilterOverrides = {}): void {
     const current = readStateFromUI();
     const next: EventsQueryState = {
       ...current,
+      organizerId: overrides.organizerId !== undefined ? overrides.organizerId : current.organizerId,
       categoryId: overrides.categoryId !== undefined ? overrides.categoryId : current.categoryId,
       statusId: overrides.statusId !== undefined ? overrides.statusId : current.statusId,
       locationId: overrides.locationId !== undefined ? overrides.locationId : current.locationId,
@@ -315,6 +312,7 @@ export function EventsClient({
 
   function clearAllFilters(): void {
     navigateWithState({
+      organizerId: null,
       categoryId: null,
       statusId: null,
       locationId: "",
@@ -331,7 +329,7 @@ export function EventsClient({
   }
 
   const hasActiveFilters =
-    selectedCategory || selectedStatus || selectedLocation ||
+    selectedOrganizer || selectedCategory || selectedStatus || selectedLocation ||
     selectedParticipationType || dateFrom || dateTo || requiresRegistration || searchQuery;
 
   return (
@@ -398,6 +396,29 @@ export function EventsClient({
           />
         </div>
       </div>
+
+      {/* Organizer dropdown */}
+      {organizers.length > 0 && (
+        <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center">
+          <span className="text-xs font-medium text-muted">{t("events_filters.organizer")}</span>
+          <select
+            value={selectedOrganizer ?? ""}
+            onChange={(e) => {
+              const next = e.target.value || null;
+              setSelectedOrganizer(next);
+              applyFilter({ organizerId: next });
+            }}
+            className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text focus:outline-none focus:ring-1 focus:ring-border sm:w-auto"
+          >
+            <option value="">{t("events_filters.all_organizers")}</option>
+            {organizers.map((organizer) => (
+              <option key={organizer.id} value={organizer.id}>
+                {organizer.label}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
 
       {/* Location dropdown */}
       {locations.length > 0 && (

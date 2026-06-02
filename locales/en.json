@@ -137,6 +137,8 @@
     "calendar": "Calendar",
     "search_placeholder": "Search events...",
     "date": "Date:",
+    "organizer": "Organizer:",
+    "all_organizers": "All organizers",
     "location": "Location:",
     "all_locations": "All locations",
     "mode": "Mode:",

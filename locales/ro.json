@@ -137,6 +137,8 @@
     "calendar": "Calendar",
     "search_placeholder": "Cauta evenimente...",
     "date": "Data:",
+    "organizer": "Organizator:",
+    "all_organizers": "Toti organizatorii",
     "location": "Locatie:",
     "all_locations": "Toate locatiile",
     "mode": "Mod:",

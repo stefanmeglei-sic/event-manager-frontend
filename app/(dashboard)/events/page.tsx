@@ -6,7 +6,12 @@ import { EventsClient, type EventsInitialState } from "./EventsClient";
 import { slugify } from "@/lib/events/slug";
 
 export const metadata: Metadata = {
-  title: "Events — Event Manager",
+  title: "Events - Event Manager",
+};
+
+type OrganizerOption = {
+  id: string;
+  label: string;
 };
 
 function getServerApiUrl(): string {
@@ -50,6 +55,7 @@ function parseInitialState(raw: Record<string, string | string[] | undefined>): 
       : [];
 
   return {
+    organizerId: pick("organizer") ?? null,
     categoryId: pick("category") ?? null,
     statusId: pick("status") ?? null,
     locationId: pick("location") ?? "",
@@ -69,6 +75,7 @@ function buildInitialEventsQuery(state: EventsInitialState): string {
   const params = new URLSearchParams();
   params.set("limit", String(state.limit));
   if (state.cursor) params.set("cursor", state.cursor);
+  if (state.organizerId) params.set("organizer_id", state.organizerId);
   if (state.categoryId) params.set("categorie_id", state.categoryId);
   if (state.statusId) params.set("status_id", state.statusId);
   if (state.locationId) params.set("location_id", state.locationId);
@@ -82,6 +89,7 @@ function buildInitialEventsQuery(state: EventsInitialState): string {
 
 function resolveStateIds(
   state: EventsInitialState,
+  organizers: OrganizerOption[],
   categories: EventCategory[],
   statuses: EventStatus[],
   locations: Location[],
@@ -89,6 +97,8 @@ function resolveStateIds(
 ): EventsInitialState {
   return {
     ...state,
+    organizerId:
+      organizers.find((o) => slugify(o.label) === state.organizerId || o.id === state.organizerId)?.id ?? null,
     categoryId: categories.find((c) => slugify(c.nume) === state.categoryId)?.id ?? null,
     statusId: statuses.find((s) => slugify(s.nume) === state.statusId)?.id ?? null,
     locationId: locations.find((l) => slugify(l.nume_sala) === state.locationId)?.id ?? "",
@@ -106,15 +116,27 @@ export default async function EventsPage({
   const rawSearchParams = searchParams ? await searchParams : {};
   const rawState = parseInitialState(rawSearchParams);
 
-  const [categories, statuses, locations, participationTypes] = await Promise.all([
+  const [categories, statuses, locations, participationTypes, organizersSource] = await Promise.all([
     fetchJson<EventCategory[]>("/lookups/event-categories"),
     fetchJson<EventStatus[]>("/lookups/event-statuses"),
     fetchJson<Location[]>("/lookups/locations"),
     fetchJson<EventStatus[]>("/lookups/participation-types"),
+    fetchJson<PaginatedEvents>("/events?limit=200"),
   ]);
+
+  const organizersMap = new Map<string, string>();
+  for (const item of organizersSource?.items ?? []) {
+    if (!organizersMap.has(item.organizer_id)) {
+      organizersMap.set(item.organizer_id, item.organizer_name ?? item.organizer_id);
+    }
+  }
+  const organizers: OrganizerOption[] = Array.from(organizersMap.entries())
+    .map(([id, label]) => ({ id, label }))
+    .sort((a, b) => a.label.localeCompare(b.label));
 
   const initialState = resolveStateIds(
     rawState,
+    organizers,
     categories ?? [],
     statuses ?? [],
     locations ?? [],
@@ -140,6 +162,7 @@ export default async function EventsPage({
       <EventsClient
         initialData={initialData}
         initialState={initialState}
+        organizers={organizers}
         categories={categories ?? []}
         statuses={statuses ?? []}
         locations={locations ?? []}
