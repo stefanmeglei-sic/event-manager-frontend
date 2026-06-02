@@ -11,6 +11,8 @@ type Props = {
 };
 
 type ParticipationType = { id: string; nume: string };
+type RegistrationStatus = { id: string; nume: string };
+type RegistrationResponse = { status_id: string };
 
 export default function EnrollButton({ eventId, organizerId, participationTypeId }: Props) {
   const { t } = useLocale();
@@ -36,6 +38,7 @@ export default function EnrollButton({ eventId, organizerId, participationTypeId
   const [resolvedParticipationTypeId, setResolvedParticipationTypeId] = useState<string | null>(
     participationTypeId,
   );
+  const [waitingStatusId, setWaitingStatusId] = useState<string | null>(null);
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [message, setMessage] = useState<string | null>(() => {
     if (typeof window === "undefined") {
@@ -53,6 +56,17 @@ export default function EnrollButton({ eventId, organizerId, participationTypeId
     }
     return null;
   });
+
+  useEffect(() => {
+    apiFetch<RegistrationStatus[]>("/lookups/registration-statuses")
+      .then((statuses) => {
+        const waiting = statuses.find((entry) => entry.nume === "waiting");
+        setWaitingStatusId(waiting?.id ?? null);
+      })
+      .catch(() => {
+        setWaitingStatusId(null);
+      });
+  }, []);
 
   useEffect(() => {
     if (!participationTypeId) {
@@ -84,13 +98,17 @@ export default function EnrollButton({ eventId, organizerId, participationTypeId
     setStatus("loading");
     setMessage(null);
     try {
-      await apiFetch(`/events/${eventId}/registrations`, {
+      const registration = await apiFetch<RegistrationResponse>(`/events/${eventId}/registrations`, {
         method: "POST",
         token: token ?? undefined,
         body: JSON.stringify({ tip_participare_id: resolvedParticipationTypeId }),
       });
       setStatus("success");
-      setMessage(t("enroll.enrolled"));
+      setMessage(
+        waitingStatusId && registration.status_id === waitingStatusId
+          ? t("enroll.waiting_list")
+          : t("enroll.enrolled"),
+      );
     } catch (err) {
       setStatus("error");
       setMessage(err instanceof Error ? err.message : t("enroll.failed"));

@@ -184,6 +184,7 @@
     "failed_to_load_participation_types": "Nu s-au putut incarca tipurile de participare.",
     "no_participation_type_for_event": "Nu exista un tip de participare configurat pentru acest eveniment.",
     "enrolled": "Inscriere realizata!",
+    "waiting_list": "Ai fost adaugat pe lista de asteptare.",
     "failed": "Inscrierea a esuat.",
     "enrolling": "Se inscrie...",
     "enroll": "Inscrie-te"

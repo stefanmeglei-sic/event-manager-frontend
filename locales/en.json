@@ -184,6 +184,7 @@
     "failed_to_load_participation_types": "Could not load participation types.",
     "no_participation_type_for_event": "No participation type is configured for this event.",
     "enrolled": "You are enrolled!",
+    "waiting_list": "You were added to the waiting list.",
     "failed": "Failed to enroll.",
     "enrolling": "Enrolling...",
     "enroll": "Enroll"
