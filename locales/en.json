@@ -13,6 +13,7 @@
   },
   "nav": {
     "home": "Home",
+    "admin": "Admin",
     "new_event": "New event",
     "locations": "Locations",
     "admin_events": "Approve Events",
@@ -20,6 +21,11 @@
     "users": "Users",
     "reports": "Reports",
     "my_events": "My Events",
+    "notifications": "Notifications",
+    "mark_all_read": "Mark all as read",
+    "loading_notifications": "Loading notifications...",
+    "no_notifications": "No notifications yet.",
+    "failed_to_load_notifications": "Failed to load notifications",
     "profile": "Profile",
     "sign_out": "Sign out"
   },

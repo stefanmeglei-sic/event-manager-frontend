@@ -13,6 +13,7 @@
   },
   "nav": {
     "home": "Acasa",
+    "admin": "Admin",
     "new_event": "Eveniment nou",
     "locations": "Locatii",
     "admin_events": "Aprobare evenimente",
@@ -20,6 +21,11 @@
     "users": "Utilizatori",
     "reports": "Rapoarte",
     "my_events": "Evenimentele mele",
+    "notifications": "Notificari",
+    "mark_all_read": "Marcheaza toate ca citite",
+    "loading_notifications": "Se incarca notificarile...",
+    "no_notifications": "Nu exista notificari momentan.",
+    "failed_to_load_notifications": "Nu s-au putut incarca notificarile",
     "profile": "Profil",
     "sign_out": "Deconectare"
   },
