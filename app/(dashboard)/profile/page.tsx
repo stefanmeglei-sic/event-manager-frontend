@@ -7,6 +7,7 @@ import { useLocale } from "@/app/components/LocaleProvider";
 
 type AuthUser = { id: string; email: string; role: string; token: string };
 type RegistrationStatus = { id: string; nume: string };
+type CancelRegistrationResponse = { status_id: string };
 
 export default function ProfilePage() {
   const { locale, t } = useLocale();
@@ -61,7 +62,7 @@ export default function ProfilePage() {
     if (!user) return;
     setCancellingId(reg.id);
     try {
-      await apiFetch(
+      const cancelled = await apiFetch<CancelRegistrationResponse>(
         `/events/${reg.eveniment_id}/registrations/${reg.id}/cancel`,
         {
           method: "PATCH",
@@ -70,7 +71,7 @@ export default function ProfilePage() {
       );
       setRegistrations((prev) =>
         prev.map((r) =>
-          r.id === reg.id ? { ...r, status_id: "cancelled" } : r
+          r.id === reg.id ? { ...r, status_id: cancelled.status_id } : r
         )
       );
     } catch {
@@ -198,6 +199,7 @@ function StatusBadge({
     pending: "text-warning border-warning",
     confirmed: "text-success border-success",
     checked_in: "text-primary border-primary",
+    waiting: "text-warning border-warning",
     cancelled: "text-danger border-danger",
   };
   const color = colorMap[name] ?? "text-muted border-border";
