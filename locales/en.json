@@ -16,6 +16,7 @@
     "new_event": "New event",
     "locations": "Locations",
     "admin_events": "Approve Events",
+    "lookups": "Lookups",
     "users": "Users",
     "reports": "Reports",
     "my_events": "My Events",
@@ -100,6 +101,23 @@
     "failed_to_create": "Failed to create location",
     "failed_to_delete": "Failed to delete location",
     "failed_to_update": "Failed to update location"
+  },
+  "admin_lookups": {
+    "title": "Manage Lookups",
+    "subtitle": "Admin CRUD for categories and participation types.",
+    "restricted_title": "Lookups",
+    "restricted_message": "Only admin users can manage lookup values.",
+    "categories": "Event Categories",
+    "participation_types": "Participation Types",
+    "name": "Name",
+    "add": "Add",
+    "save": "Save",
+    "saving": "Saving...",
+    "name_required": "Name is required",
+    "failed_to_load": "Failed to load lookups",
+    "failed_to_create": "Failed to create lookup",
+    "failed_to_update": "Failed to update lookup",
+    "failed_to_delete": "Failed to delete lookup"
   },
   "reports": {
     "title": "Reports",

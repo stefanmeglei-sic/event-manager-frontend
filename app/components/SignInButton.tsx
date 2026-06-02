@@ -52,6 +52,14 @@ export function SignInButton() {
         )}
         {user.role === "admin" && (
           <Link
+            href="/admin/lookups"
+            className="rounded-full border border-border px-3 py-1.5 text-[11px] font-medium text-text transition hover:bg-surface-muted sm:text-xs"
+          >
+            {t("nav.lookups")}
+          </Link>
+        )}
+        {user.role === "admin" && (
+          <Link
             href="/admin/users"
             className="rounded-full border border-border px-3 py-1.5 text-[11px] font-medium text-text transition hover:bg-surface-muted sm:text-xs"
           >

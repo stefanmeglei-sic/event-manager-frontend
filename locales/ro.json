@@ -16,6 +16,7 @@
     "new_event": "Eveniment nou",
     "locations": "Locatii",
     "admin_events": "Aprobare evenimente",
+    "lookups": "Clasificari",
     "users": "Utilizatori",
     "reports": "Rapoarte",
     "my_events": "Evenimentele mele",
@@ -100,6 +101,23 @@
     "failed_to_create": "Nu s-a putut crea locatia",
     "failed_to_delete": "Nu s-a putut sterge locatia",
     "failed_to_update": "Nu s-a putut actualiza locatia"
+  },
+  "admin_lookups": {
+    "title": "Administrare clasificari",
+    "subtitle": "CRUD administrativ pentru categorii si tipuri de participare.",
+    "restricted_title": "Clasificari",
+    "restricted_message": "Doar administratorii pot gestiona valorile din nomenclatoare.",
+    "categories": "Categorii eveniment",
+    "participation_types": "Tipuri de participare",
+    "name": "Nume",
+    "add": "Adauga",
+    "save": "Salveaza",
+    "saving": "Se salveaza...",
+    "name_required": "Numele este obligatoriu",
+    "failed_to_load": "Nu s-au putut incarca nomenclatoarele",
+    "failed_to_create": "Nu s-a putut crea valoarea",
+    "failed_to_update": "Nu s-a putut actualiza valoarea",
+    "failed_to_delete": "Nu s-a putut sterge valoarea"
   },
   "reports": {
     "title": "Rapoarte",
