@@ -5,6 +5,12 @@ Related backend project:
 
 ## Getting Started
 
+Create the local environment file first:
+
+```bash
+cp .env.local.example .env.local
+```
+
 First, run the development server:
 
 ```bash
